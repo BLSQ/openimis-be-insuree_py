@@ -55,6 +55,14 @@ class InsureeBase:
     health_facility_id = graphene.Int(required=False)
     offline = graphene.Boolean(required=False)
     json_ext = graphene.types.json.JSONString(required=False)
+    
+    # additional fields for ECRVS
+    birth_registration_number = graphene.String(required=False)
+    place_of_birth = graphene.String(required=False)
+    uin = graphene.String(required=False)
+    nin = graphene.String(required=False)
+    certificate_number = graphene.String(required=False)
+
 
 
 class CreateInsureeInputType(InsureeBase, OpenIMISMutation.Input):
@@ -238,6 +246,7 @@ class CreateInsureeMutation(OpenIMISMutation):
 
     @classmethod
     def async_mutate(cls, user, **data):
+        print('CreateInsureeMutation')
         try:
             if type(user) is AnonymousUser or not user.id:
                 raise ValidationError(
@@ -249,6 +258,7 @@ class CreateInsureeMutation(OpenIMISMutation):
             data['validity_from'] = TimeUtils.now()
             client_mutation_id = data.get("client_mutation_id")
             insuree = update_or_create_insuree(data, user)
+            print('insuree created:', insuree)
             InsureeMutation.object_mutated(user, client_mutation_id=client_mutation_id, insuree=insuree)
             return None
         except Exception as exc:

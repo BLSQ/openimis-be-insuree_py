@@ -3,6 +3,14 @@ import os
 from django.apps import AppConfig
 from django.conf import settings
 
+import signal
+
+
+def on_shutdown(signum, frame):
+    from .adapters import HeraAdapter
+    HeraAdapter(operation='unsubscribe_from_topic').get_data()
+    exit()
+signal.signal(signal.SIGINT, on_shutdown)
 
 MODULE_NAME = "insuree"
 
@@ -91,6 +99,10 @@ class InsureeConfig(AppConfig):
         self._configure_fake_insurees(cfg)
         self._configure_renewal(cfg)
         self._configure_photo_root(cfg)
+
+        # subscription to hera life_event
+        from .adapters import HeraAdapter
+        HeraAdapter(operation='subscribe_to_life_event').get_data()
 
     # Getting these at runtime for easier testing
     @classmethod
