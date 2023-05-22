@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('insuree', '0016_alter_insuree_options'),
+        ('insuree', '0015_set_managed_to_true_in_all_models'),
     ]
 
     operations = [
@@ -79,5 +79,15 @@ class Migration(migrations.Migration):
             model_name='insuree',
             name='weight',
             field=models.CharField(blank=True, db_column='Weight', max_length=100, null=True),
+        ),
+        migrations.AddField(
+            model_name='insuree',
+            name='registration_date',
+            field=models.CharField(blank=True, db_column='RegistrationDate', max_length=100, null=True),
+        ),
+        migrations.AddField(
+            model_name='insuree',
+            name='usual_residence',
+            field=models.CharField(blank=True, db_column='UsualResidence', max_length=100, null=True),
         ),
     ]

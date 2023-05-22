@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('insuree', '0020_alter_accesstoken_expiry_time'),
+        ('insuree', '0016_ecrvs_insuree_fields'),
     ]
 
     operations = [
@@ -19,8 +19,5 @@ class Migration(migrations.Migration):
                 ('expiry_time', models.DateTimeField(blank=True, null=True)),
                 ('subscription_uuid', models.UUIDField(blank=True, null=True)),
             ],
-        ),
-        migrations.DeleteModel(
-            name='AccessToken',
         ),
     ]
