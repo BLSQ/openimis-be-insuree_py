@@ -102,7 +102,7 @@ class InsureeConfig(AppConfig):
 
         # subscription to hera life_event
         from .adapters import HeraAdapter
-        HeraAdapter(operation='subscribe_to_life_event').get_data()
+        #HeraAdapter(operation='subscribe_to_life_event').get_data()
 
     # Getting these at runtime for easier testing
     @classmethod

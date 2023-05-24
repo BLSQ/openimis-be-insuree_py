@@ -93,7 +93,7 @@ class Family(core_models.VersionedModel, core_models.ExtendableModel):
                             max_length=36, default=uuid.uuid4, unique=True)
     head_insuree = models.OneToOneField(
         'Insuree', models.DO_NOTHING, db_column='InsureeID', null=False,
-        related_name='head_of', default=get_default_head_insuree) # ADDED default CHECK IF YOU WANT THE BEHAVIOR
+        related_name='head_of') # ADDED default CHECK IF YOU WANT THE BEHAVIOR
     location = models.ForeignKey(
         location_models.Location,
         models.DO_NOTHING, db_column='LocationId', blank=True, null=True)
@@ -216,14 +216,12 @@ class Insuree(core_models.VersionedModel, core_models.ExtendableModel):
     other_names = models.CharField(db_column='OtherNames', max_length=100)
 
     # eCRVS fields
-    nin = models.CharField(max_length=100, blank=True, null=False)
-    uin = models.CharField(max_length=100, blank=True, null=True)
     first_name = models.CharField(db_column='FirstName', max_length=100, blank=True, null=True)
     place_of_birth = models.CharField(db_column='PlaceOfBirth', max_length=100, blank=True, null=True)
     registration_date = models.CharField(db_column='RegistrationDate', max_length=100, blank=True, null=True)
-    # certificate_number = models.CharField(db_column='CertificateNumber', max_length=100, blank=True, null=True)
-    # height = models.CharField(db_column='Height', max_length=100, blank=True, null=True)
-    # weight = models.CharField(db_column='Weight', max_length=100, blank=True, null=True)
+    certificate_number = models.CharField(db_column='CertificateNumber', max_length=100, blank=True, null=True)
+    height = models.CharField(db_column='Height', max_length=100, blank=True, null=True)
+    weight = models.CharField(db_column='Weight', max_length=100, blank=True, null=True)
     residential_alley = models.CharField(db_column='ResidentialAlley', max_length=100, blank=True, null=True)
     is_local = models.CharField(db_column='IsLocal', max_length=100, blank=True, null=True)
     usual_residence = models.CharField(db_column='UsualResidence', max_length=100, blank=True, null=True)
@@ -287,7 +285,7 @@ class Insuree(core_models.VersionedModel, core_models.ExtendableModel):
 
     offline = models.BooleanField(db_column='isOffline', blank=True, null=True)
     audit_user_id = models.IntegerField(db_column='AuditUserID')
-    row_id = models.BigIntegerField(db_column='RowID', blank=True, null=True)
+    # row_id = models.BigIntegerField(db_column='RowID', blank=True, null=True)
 
     def is_head_of_family(self):
         return self.family and self.family.head_insuree == self
