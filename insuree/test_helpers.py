@@ -6,10 +6,12 @@ def create_test_insuree(with_family=True, is_head=False, custom_props=None, fami
     # So we first insert the family with a dummy id and then update it
     if with_family:
         family = Family.objects.create(
-            validity_from="2019-01-01",
-            head_insuree_id=1,  # dummy
-            audit_user_id=-1,
-            **(family_custom_props if family_custom_props else {})
+            **{
+                "validity_from": "2019-01-01",
+                "head_insuree_id": 1,  # dummy
+                "audit_user_id": -1,
+                **(family_custom_props if family_custom_props else {})
+            }
         )
     else:
         family = None
