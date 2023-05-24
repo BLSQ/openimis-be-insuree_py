@@ -216,7 +216,6 @@ class Insuree(core_models.VersionedModel, core_models.ExtendableModel):
     other_names = models.CharField(db_column='OtherNames', max_length=100)
 
     # eCRVS fields
-    first_name = models.CharField(db_column='FirstName', max_length=100, blank=True, null=True)
     place_of_birth = models.CharField(db_column='PlaceOfBirth', max_length=100, blank=True, null=True)
     registration_date = models.CharField(db_column='RegistrationDate', max_length=100, blank=True, null=True)
     certificate_number = models.CharField(db_column='CertificateNumber', max_length=100, blank=True, null=True)
