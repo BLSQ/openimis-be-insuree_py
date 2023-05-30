@@ -6,13 +6,19 @@ from django.core.management.base import BaseCommand
 from django.db.models import Q
 from location.models import Location
 
-from insuree.models import Gender
+from insuree.models import Gender, Insuree
 from insuree.test_helpers import create_test_insuree, create_test_photo
+from insuree.services import reset_insuree_before_update, is_modulo_10_number_valid
 
 
 def replace_dict_key(dictionary: dict, old_key: str, new_key: str):
     dictionary[new_key] = dictionary[old_key]
     dictionary.pop(old_key)
+
+
+def remove_dict_keys(dictionary: dict, keys: list):
+    for key in keys:
+        dictionary.pop(key, None)
 
 
 def generate_location_filters(lga_name, district_name, settlement_name):
@@ -50,13 +56,17 @@ class Command(BaseCommand):
             with open(file_location, mode='r', encoding='utf-8-sig') as csv_file:
 
                 total_rows = 0
+                total_created = 0
+                total_updated = 0
+                total_errors = 0
                 photo_root = os.environ.get("PHOTO_ROOT_PATH", "/data/photos")
 
-                csv_reader = csv.DictReader(csv_file, delimiter=',')
+                print(f"**** Starting to import insurees from {file_location} ***")
+
+                csv_reader = csv.DictReader(csv_file, delimiter=';')
                 for row in csv_reader:
 
                     total_rows += 1
-                    print(f"{total_rows} - starting Insuree {row['nin']}")
 
                     json_ext = {}
                     validity_from = datetime.datetime.now()
@@ -66,6 +76,17 @@ class Command(BaseCommand):
                         row[key] = row[key].strip()
                         json_ext[key] = row[key]
                     row["json_ext"] = json_ext
+
+                    # Checking NIN validity
+                    if not is_modulo_10_number_valid(row["nin"]):
+                        print(f"{total_rows:7,} - Error: Insuree {row['nin']} - invalid NIN checksum")
+                        total_errors += 1
+                        continue
+
+                    if len(row["nin"]) != 12:
+                        print(f"{total_rows:7,} - Error: Insuree {row['nin']} - invalid NIN length")
+                        total_errors += 1
+                        continue
 
                     # Changing key names if data is ok as is
                     replace_dict_key(row, "nin", "chf_id")
@@ -77,7 +98,7 @@ class Command(BaseCommand):
                     # Adding new keys and editing data
                     row["head"] = True
                     row["validity_from"] = validity_from
-                    row["dob"] = datetime.datetime.strptime(row["dob"], '%d/%m/%Y').strftime('%Y-%m-%d')
+                    # row["dob"] = datetime.datetime.strptime(row["dob"], '%d/%m/%Y').strftime('%Y-%m-%d')
                     row["place_of_birth"] = row["pob_health_facility"] if row["pob_health_facility"] else row["pob_city"]
                     row["gender"] = GENDERS.get(row["sex"], Gender.objects.get(code='O'))
                     row["father_name"] = f"{row['father_name']} {row['father_lastname']}"
@@ -85,76 +106,85 @@ class Command(BaseCommand):
                     row["is_local"] = row["nationality"] == row["pob_country"]
 
                     # Removing fields that are not directly stored
-                    row.pop("id")
-                    row.pop("nationality")
-                    row.pop("sex")
-                    row.pop("father_lastname")
-                    row.pop("mother_lastname")
-                    row.pop("contact_person")
-                    row.pop("pob_place_type")
-                    row.pop("pob_country")
-                    row.pop("pob_lga")
-                    row.pop("pob_district")
-                    row.pop("pob_city")
-                    row.pop("pob_health_facility")
-                    row.pop("content_type")
-                    row.pop("document_type")
+                    remove_dict_keys(row, ["id", "nationality", "sex", "father_lastname", "mother_lastname",
+                                           "contact_person", "pob_place_type", "pob_country", "pob_lga",
+                                           "pob_district", "pob_city", "pob_health_facility", "content_type",
+                                           "document_type"])
                     photo_filename = row.pop("filename")
+                    photo_date = row.pop("registration_date")
 
-                    # Preparing the Family data
-                    family_props = {
-                        "validity_from": validity_from
-                    }
+                    # Checking if the Insuree already exists
+                    existing_insuree = Insuree.objects.filter(chf_id=row["chf_id"]).first()
 
-                    # Filtering the person's residence location
-                    if row["res_city"] and row["res_district"] and row["res_lga"]:
-                        location_filters = generate_location_filters(row["res_lga"],
-                                                                     row["res_district"],
-                                                                     row["res_city"])
+                    if existing_insuree:
+                        # TODO: update the Insuree's residence through their family, if eCRVS handles residence change
+                        # TODO: same for Insuree's picture if it changes
+                        existing_insuree.save_history()
+
+                        # Removing location fields
+                        remove_dict_keys(row, ["res_country", "res_lga", "res_district", "res_city",
+                                               "por_lga", "por_district", "por_city"])
+                        row["audit_user_id"] = -1
+
+                        [setattr(existing_insuree, key, row[key]) for key in row]
+                        existing_insuree.save()
+                        total_updated += 1
+                        print(f"{total_rows:7,} - Insuree {row['chf_id']} updated")
+
                     else:
-                        # No information on the person's residence -> registration place
-                        location_filters = generate_location_filters(row["por_lga"],
-                                                                     row["por_district"],
-                                                                     row["por_city"])
+                        # Preparing the Family data
+                        family_props = {
+                            "validity_from": validity_from
+                        }
 
-                    location = Location.objects.filter(location_filters).first()
-                    if location:
-                        family_props["location"] = location
-                    else:
+                        # Filtering the person's residence location
                         if row["res_city"] and row["res_district"] and row["res_lga"]:
-                            location_string = f"Residence={row['res_lga']} - {row['res_district']} - {row['res_city']}"
+                            location_filters = generate_location_filters(row["res_lga"],
+                                                                         row["res_district"],
+                                                                         row["res_city"])
                         else:
-                            location_string = f"Registration={row['por_lga']} - {row['por_district']} - {row['por_city']}"
+                            # No information on the person's residence -> registration place
+                            location_filters = generate_location_filters(row["por_lga"],
+                                                                         row["por_district"],
+                                                                         row["por_city"])
 
-                    # Removing location fields
-                    row.pop("res_country")
-                    row.pop("res_lga")
-                    row.pop("res_district")
-                    row.pop("res_city")
-                    row.pop("por_lga")
-                    row.pop("por_district")
-                    row.pop("por_city")
+                        location = Location.objects.filter(location_filters).first()
+                        if location:
+                            family_props["location"] = location
+                        else:
+                            if row["res_city"] and row["res_district"] and row["res_lga"]:
+                                location_string = f"Residence={row['res_lga']} - {row['res_district']} - {row['res_city']}"
+                            else:
+                                location_string = f"Registration={row['por_lga']} - {row['por_district']} - {row['por_city']}"
 
-                    # Inserting data into the DB
-                    # check NIN validity + existing NIN?
-                    insuree = create_test_insuree(with_family=True, is_head=True, custom_props=row, family_custom_props=family_props)
-                    photo_props = {
-                        "photo": "",
-                        "chf_id": insuree.chf_id,
-                        "folder": photo_root,
-                        "filename": photo_filename,
-                        "validity_from": validity_from,
-                    }
-                    photo = create_test_photo(insuree_id=insuree.id, officer_id=-1, custom_props=photo_props)
-                    insuree.photo = photo
-                    insuree.save()
+                        # Removing location fields
+                        remove_dict_keys(row, ["res_country", "res_lga", "res_district", "res_city",
+                                               "por_lga", "por_district", "por_city"])
 
-                    # Printing result
-                    if location:
-                        print(f"{total_rows} - insuree {row['chf_id']} created with location")
-                    else:
-                        print(f"{total_rows} - insuree {row['chf_id']} without any location. Location invalid: [{location_string}]")
-                    print("---------")
+                        # Inserting data into the DB
+                        insuree = create_test_insuree(with_family=True, is_head=True, custom_props=row,
+                                                      family_custom_props=family_props)
+                        photo_props = {
+                            "photo": "",
+                            "chf_id": insuree.chf_id,
+                            "folder": photo_root,
+                            "filename": photo_filename,
+                            "validity_from": validity_from,
+                            "date": photo_date,
+                        }
+                        photo = create_test_photo(insuree_id=insuree.id, officer_id=-1, custom_props=photo_props)
+                        insuree.photo = photo
+                        insuree.save()
 
+                        total_created += 1
 
-                print(f"Import finished: {total_rows} insurees created")
+                        if location:
+                            print(f"{total_rows:7,} - Insuree {row['chf_id']} created with location")
+                        else:
+                            print(f"{total_rows:7,} - Insuree {row['chf_id']} without any location. "
+                                  f"Location invalid: [{location_string}]")
+
+                print(f"Import finished - {total_rows} lines received")
+                print(f"\t- {total_created} insurees created")
+                print(f"\t- {total_updated} insurees updated")
+                print(f"\t- {total_errors} errors")
