@@ -187,7 +187,7 @@ class Command(BaseCommand):
                                 continue
                             else:
                                 village_id = UNKNOWN_VILLAGES[lga.id]
-                                village = Location.objects.filter(id=village_id)
+                                village = Location.objects.filter(id=village_id).first()
                                 family_props["location"] = village
 
                         # Removing location fields
