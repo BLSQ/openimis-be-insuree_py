@@ -33,9 +33,25 @@ def generate_location_filters(lga_name, district_name, settlement_name):
            & Q(parent__parent__type="D")
 
 
+def return_lga(lga_name):
+    return Location.objects.filter(validity_to__isnull=True, type="D", name=lga_name).first()
+
+
 GENDERS = {
     "FEMALE": Gender.objects.get(code='F'),
     "MALE": Gender.objects.get(code='M'),
+}
+
+# LGA IDs mapped to Villages IDs
+UNKNOWN_VILLAGES = {
+    539: 4873, # Banjul
+    541: 4874, # Brikama
+    542: 4875, # Mansakonko
+    543: 4876, # Kerewan
+    544: 4877, # Kuntaur
+    547: 4878, # Janjanbureh
+    2861: 4879, # Basse
+    2960: 4880, # Kanifing
 }
 
 
@@ -148,14 +164,31 @@ class Command(BaseCommand):
                                                                          row["por_district"],
                                                                          row["por_city"])
 
+                        # Trying to link the Insuree to their Location
                         location = Location.objects.filter(location_filters).first()
                         if location:
                             family_props["location"] = location
                         else:
                             if row["res_city"] and row["res_district"] and row["res_lga"]:
                                 location_string = f"Residence={row['res_lga']} - {row['res_district']} - {row['res_city']}"
+                                lga_name = row["res_lga"]
                             else:
                                 location_string = f"Registration={row['por_lga']} - {row['por_district']} - {row['por_city']}"
+                                lga_name = row["por_lga"]
+
+                            # The location does not exist, trying to link it now to one of the "unknown" villages
+                            lga = return_lga(lga_name)
+
+                            if not lga:
+                                # Skipping this Insuree because it's LGA is incorrect (not in our list)
+                                total_errors += 1
+                                print(f"{total_rows:7,} - Error: Insuree {row['chf_id']} - unknown LGA. "
+                                      f"Location invalid: [{location_string}]")
+                                continue
+                            else:
+                                village_id = UNKNOWN_VILLAGES[lga.id]
+                                village = Location.objects.filter(id=village_id)
+                                family_props["location"] = village
 
                         # Removing location fields
                         remove_dict_keys(row, ["res_country", "res_lga", "res_district", "res_city",
@@ -179,12 +212,12 @@ class Command(BaseCommand):
                         total_created += 1
 
                         if location:
-                            print(f"{total_rows:7,} - Insuree {row['chf_id']} created with location")
+                            print(f"{total_rows:7,} - Insuree {row['chf_id']} created with location.")
                         else:
-                            print(f"{total_rows:7,} - Insuree {row['chf_id']} without any location. "
+                            print(f"{total_rows:7,} - Insuree {row['chf_id']} created in unknown location. "
                                   f"Location invalid: [{location_string}]")
 
-                print(f"Import finished - {total_rows} lines received")
+                print(f"Import finished - {total_rows} lines received:")
                 print(f"\t- {total_created} insurees created")
                 print(f"\t- {total_updated} insurees updated")
                 print(f"\t- {total_errors} errors")
