@@ -3,14 +3,14 @@ import os
 from django.apps import AppConfig
 from django.conf import settings
 
-import signal
+# import signal
 
 
-def on_shutdown(signum, frame):
-    from .adapters import HeraAdapter
-    HeraAdapter(operation='unsubscribe_from_topic').get_data()
-    exit()
-signal.signal(signal.SIGINT, on_shutdown)
+# def on_shutdown(signum, frame):
+#     from .adapters import HeraAdapter
+#     HeraAdapter(operation='unsubscribe_from_topic').get_data()
+#     exit()
+# signal.signal(signal.SIGINT, on_shutdown)
 
 MODULE_NAME = "insuree"
 
@@ -29,7 +29,9 @@ DEFAULT_CFG = {
     "gql_mutation_update_insurees_perms": ["101103"],
     "gql_mutation_delete_insurees_perms": ["101104"],
     "insuree_photos_root_path": None,
-    "excluded_insuree_chfids": ['999999999'],  # fake insurees (and bound families) used, for example, in 'funding'
+    "excluded_insuree_chfids": [
+        "999999999"
+    ],  # fake insurees (and bound families) used, for example, in 'funding'
     "renewal_photo_age_adult": 60,  # age (in months) of a picture due for renewal for adults
     "renewal_photo_age_child": 12,  # age (in months) of a picture due for renewal for children
     "insuree_number_validator": None,  # Insuree number *function* that validates the insuree number
@@ -61,7 +63,7 @@ class InsureeConfig(AppConfig):
     validation_code_invalid_insuree_number_checksum = 4
     validation_code_invalid_insuree_number_exception = 5
     insuree_photos_root_path = None
-    excluded_insuree_chfids = ['999999999']
+    excluded_insuree_chfids = ["999999999"]
     renewal_photo_age_adult = 60
     renewal_photo_age_child = 12
     insuree_number_validator = None
@@ -71,16 +73,34 @@ class InsureeConfig(AppConfig):
     def _configure_permissions(self, cfg):
         InsureeConfig.gql_query_insurees_perms = cfg["gql_query_insurees_perms"]
         InsureeConfig.gql_query_insuree_perms = cfg["gql_query_insuree_perms"]
-        InsureeConfig.gql_query_insuree_photo_perms = cfg["gql_query_insuree_photo_perms"]
-        InsureeConfig.gql_query_insuree_officers_perms = cfg["gql_query_insuree_officers_perms"]
-        InsureeConfig.gql_query_insuree_family_members = cfg["gql_query_insuree_family_members"]
+        InsureeConfig.gql_query_insuree_photo_perms = cfg[
+            "gql_query_insuree_photo_perms"
+        ]
+        InsureeConfig.gql_query_insuree_officers_perms = cfg[
+            "gql_query_insuree_officers_perms"
+        ]
+        InsureeConfig.gql_query_insuree_family_members = cfg[
+            "gql_query_insuree_family_members"
+        ]
         InsureeConfig.gql_query_families_perms = cfg["gql_query_families_perms"]
-        InsureeConfig.gql_query_insuree_policy_perms = cfg["gql_query_insuree_policy_perms"]
-        InsureeConfig.gql_mutation_create_families_perms = cfg["gql_mutation_create_families_perms"]
-        InsureeConfig.gql_mutation_update_families_perms = cfg["gql_mutation_update_families_perms"]
-        InsureeConfig.gql_mutation_create_insurees_perms = cfg["gql_mutation_create_insurees_perms"]
-        InsureeConfig.gql_mutation_update_insurees_perms = cfg["gql_mutation_update_insurees_perms"]
-        InsureeConfig.gql_mutation_delete_insurees_perms = cfg["gql_mutation_delete_insurees_perms"]
+        InsureeConfig.gql_query_insuree_policy_perms = cfg[
+            "gql_query_insuree_policy_perms"
+        ]
+        InsureeConfig.gql_mutation_create_families_perms = cfg[
+            "gql_mutation_create_families_perms"
+        ]
+        InsureeConfig.gql_mutation_update_families_perms = cfg[
+            "gql_mutation_update_families_perms"
+        ]
+        InsureeConfig.gql_mutation_create_insurees_perms = cfg[
+            "gql_mutation_create_insurees_perms"
+        ]
+        InsureeConfig.gql_mutation_update_insurees_perms = cfg[
+            "gql_mutation_update_insurees_perms"
+        ]
+        InsureeConfig.gql_mutation_delete_insurees_perms = cfg[
+            "gql_mutation_delete_insurees_perms"
+        ]
         InsureeConfig.insuree_number_validator = cfg["insuree_number_validator"]
         InsureeConfig.insuree_number_length = cfg["insuree_number_length"]
         InsureeConfig.insuree_number_modulo_root = cfg["insuree_number_modulo_root"]
@@ -94,6 +114,7 @@ class InsureeConfig(AppConfig):
 
     def ready(self):
         from core.models import ModuleConfiguration
+
         cfg = ModuleConfiguration.get_or_default(MODULE_NAME, DEFAULT_CFG)
         self._configure_permissions(cfg)
         self._configure_fake_insurees(cfg)
@@ -101,22 +122,28 @@ class InsureeConfig(AppConfig):
         self._configure_photo_root(cfg)
 
         # subscription to hera life_event
-        from .adapters import HeraAdapter
-        #HeraAdapter(operation='subscribe_to_life_event').get_data()
+        # from .adapters import HeraAdapter
+        # HeraAdapter(operation='subscribe_to_life_event').get_data()
 
     # Getting these at runtime for easier testing
     @classmethod
     def get_insuree_number_validator(cls):
-        return cls.insuree_number_validator or cls.__get_from_settings_or_default("INSUREE_NUMBER_VALIDATOR")
+        return cls.insuree_number_validator or cls.__get_from_settings_or_default(
+            "INSUREE_NUMBER_VALIDATOR"
+        )
 
     @classmethod
     def get_insuree_number_length(cls):
-        value = cls.insuree_number_length or cls.__get_from_settings_or_default("INSUREE_NUMBER_LENGTH")
+        value = cls.insuree_number_length or cls.__get_from_settings_or_default(
+            "INSUREE_NUMBER_LENGTH"
+        )
         return int(value) if value else None
 
     @classmethod
     def get_insuree_number_modulo_root(cls):
-        value = cls.insuree_number_modulo_root or cls.__get_from_settings_or_default("INSUREE_NUMBER_MODULE_ROOT")
+        value = cls.insuree_number_modulo_root or cls.__get_from_settings_or_default(
+            "INSUREE_NUMBER_MODULE_ROOT"
+        )
         return int(value) if value else None
 
     def set_dataloaders(self, dataloaders):
@@ -127,7 +154,11 @@ class InsureeConfig(AppConfig):
 
     @classmethod
     def __get_from_settings_or_default(cls, attribute_name, default=None):
-        return getattr(settings, attribute_name) if hasattr(settings, attribute_name) else default
+        return (
+            getattr(settings, attribute_name)
+            if hasattr(settings, attribute_name)
+            else default
+        )
 
     def _configure_photo_root(self, cfg):
         # TODO: To be confirmed. I left loading from config for integrity reasons
