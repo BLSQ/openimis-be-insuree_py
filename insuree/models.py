@@ -578,3 +578,6 @@ class HeraUtilities(models.Model):
     access_token = models.TextField()
     expiry_time = models.DateTimeField(blank=True, null=True)
     subscription_uuid = models.UUIDField(blank=True, null=True)
+    is_active = models.BooleanField(blank=True, null=True)
+    address = models.CharField(max_length=255, blank=True, null=True)
+    policy = models.CharField(max_length=255, blank=True, null=True)
