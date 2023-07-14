@@ -63,6 +63,13 @@ class Command(BaseCommand):
                             nargs=1,
                             type=str,
                             help="Absolute path to the CSV file")
+        parser.add_argument(
+            '-a',
+            '--autoenroll',
+            action='store_true',
+            dest='autoenroll',
+            help='Automatically enrolls the Insuree if they are eligible to autoenrollment',
+        )
 
     def handle(self, *args, **options):
         file_location = options["csv_location"][0]
@@ -75,7 +82,9 @@ class Command(BaseCommand):
                 total_created = 0
                 total_updated = 0
                 total_errors = 0
+                total_autoenrollments = 0
                 photo_root = os.environ.get("PHOTO_ROOT_PATH", "/data/photos")
+                auto_enrollment = options["autoenroll"]
 
                 print(f"**** Starting to import insurees from {file_location} ***")
 
@@ -209,6 +218,11 @@ class Command(BaseCommand):
                         insuree.photo = photo
                         insuree.save()
 
+                        if auto_enrollment:
+                            from autoenroll.services import autoenroll_family
+                            autoenroll_family(insuree)
+                            total_autoenrollments += 1
+
                         total_created += 1
 
                         if location:
@@ -220,4 +234,5 @@ class Command(BaseCommand):
                 print(f"Import finished - {total_rows} lines received:")
                 print(f"\t- {total_created} insurees created")
                 print(f"\t- {total_updated} insurees updated")
+                print(f"\t- {total_autoenrollments} automatic enrollments")
                 print(f"\t- {total_errors} errors")
