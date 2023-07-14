@@ -20,9 +20,11 @@ class HeraAdapter(APIAdapter):
     nin: str = None
     uin: str = None
     uuid: str = None
+    topic: str = None
     lock = threading.Lock()
 
     def get_data(self):
+        print("OPERATION: ", self.operation)
         methods = {
             "access_token": self.__access_token,
             "get_one_person_info": self.__get_one_person,
@@ -95,7 +97,7 @@ class HeraAdapter(APIAdapter):
                 import traceback
 
                 traceback.print_exc()
-                return e
+                raise GraphQLError(e)
 
     def __get_one_person(self):
         if headers := self.__access_token():
@@ -138,23 +140,22 @@ class HeraAdapter(APIAdapter):
         return None
 
     def __subscribe_to_life_event(self):
-        subs = self.__get_subscriptions()
-        headers = self.__access_token()
-        if not subs and headers:
-            url = settings.HERA_SUBSCRIBE_URL
-            response = requests.post(url, headers=headers)
-            response = response.json()
-            instance = self.__utilities("LifeEventTopic")
-            instance.subscription_uuid = response["uuid"]
-            instance.save()
-            return response
-        return None
+        try:
+            if headers := self.__access_token():
+                url = settings.HERA_SUBSCRIBE_URL
+                response = requests.post(url, headers=headers)
+                return response.json()
+            return None
+        except Exception as e:
+            import traceback
+
+            traceback.print_exc()
+            return e
 
     def __get_subscriptions(self):
         if headers := self.__access_token():
             url = f"{settings.HERA_GENERAL_URL}/subscriptions"
             response = requests.get(url, headers=headers)
-            # rs = next((d for d in response.json() if 'gambia' in d['address']), None)
             return response.json()
         return None
 
@@ -168,17 +169,16 @@ class HeraAdapter(APIAdapter):
         return None
 
     def __unsubscribe_from_topic(self):
+        print("unsubscribing from topic")
         try:
-            uuid = self.__utilities("LifeEventTopic").subscription_uuid
             if headers := self.__access_token():
-                url = f"{settings.HERA_GENERAL_URL}/subscriptions/{uuid}"
-                response = requests.delete(url, headers=headers)
-                return response.json()
-            return None
+                url = f"{settings.HERA_GENERAL_URL}/subscriptions/{self.uuid}"
+            return requests.delete(url, headers=headers)
         except Exception as e:
             import traceback
 
             traceback.print_exc()
+            print("ERROR:", e)
             return e
 
     def __create_topic(self):
@@ -220,7 +220,6 @@ class WebhookEventManager:
         from policy.models import Policy
         from product.models import Product
         from contribution.models import Premium
-        from insuree.services import InsureeService
 
         try:
             is_local = kwargs.get("is_local", "false")
@@ -307,3 +306,31 @@ class WebhookEventManager:
 
     def get_insuree(self, nin):
         return Insuree.objects.get(nin=nin)
+
+
+# [
+#     {
+#         'uuid': 'fdaf4084-0100-458d-9b3c-324d357a40e7',
+#         'topic': 'LifeEventTopic',
+#         'protocol': 'http',
+#         'address': 'https://webhook.site/fc729fe2-c809-4068-b36c-2f2872635639/notifications',
+#         'policy': 'ertert',
+#         'active': True
+#     },
+#     {
+#         'uuid': '867e8cb3-f8c4-40a9-9e46-23f317c85d7e',
+#         'topic': 'LifeEventTopic',
+#         'protocol': 'http',
+#         'address': 'https://webhook.site/gc729fe2-c809-4068-b36c-2f2872635639/notifications',
+#         'policy': 'ertert',
+#         'active': True
+#     },
+#     {
+#         'uuid': 'a9d68996-22a7-4c23-93b1-3c212bd828bc',
+#         'topic': 'LifeEventTopic',
+#         'protocol': 'http',
+#         'address': 'http://gambia.bluesquare.org:8085/ecrvs-notification',
+#         'policy': 'ertert',
+#         'active': True
+#     }
+# ]

@@ -13,6 +13,9 @@ from django.core.exceptions import ValidationError, PermissionDenied
 from django.utils.translation import gettext as _
 from graphene import InputObjectType
 from .models import Family, Insuree, FamilyMutation, InsureeMutation
+from .adapters import HeraAdapter
+from graphene.types.generic import GenericScalar
+from graphql.error import GraphQLError
 
 logger = logging.getLogger(__name__)
 
@@ -278,7 +281,6 @@ class CreateInsureeMutation(OpenIMISMutation):
 
     @classmethod
     def async_mutate(cls, user, **data):
-        print("CreateInsureeMutation")
         try:
             if type(user) is AnonymousUser or not user.id:
                 raise ValidationError(_("mutation.authentication_required"))
@@ -534,3 +536,33 @@ class ChangeInsureeFamilyMutation(OpenIMISMutation):
                     "detail": str(exc),
                 }
             ]
+
+
+class UpdateHeraSubsMutation(OpenIMISMutation):
+    """
+    Manage Hera subscriptions
+    """
+
+    _mutation_module = "insuree"
+    _mutation_class = "UpdateHeraSubsMutation"
+
+    class Input(OpenIMISMutation.Input):
+        topic = graphene.String(required=True)
+        operation = graphene.String(required=True)
+        uuid = graphene.String(required=False)
+
+    @classmethod
+    def async_mutate(cls, user, **data):
+        print("OPERATION IN MUTATION", data.get("operation"))
+        try:
+            if not user.has_perms(InsureeConfig.gql_mutation_update_insurees_perms):
+                raise PermissionDenied(_("unauthorized"))
+            payload = HeraAdapter(
+                operation=data.get("operation"),
+                topic=data.get("topic"),
+                uuid=data.get("uuid"),
+            ).get_data()
+
+            return
+        except Exception as exc:
+            raise GraphQLError("An error occurred") from exc
