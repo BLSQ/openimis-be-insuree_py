@@ -61,6 +61,7 @@ class InsureeBase:
     type_of_id_id = graphene.String(max_length=1, required=False)
     health_facility_id = graphene.Int(required=False)
     offline = graphene.Boolean(required=False)
+    insuree_wallet = graphene.String (required = False)
     json_ext = graphene.types.json.JSONString(required=False)
 
     # additional fields for ECRVS

@@ -154,6 +154,7 @@ class InsureeGQLType(DjangoObjectType):
             "passport": ["exact", "istartswith", "icontains", "iexact", "isnull"],
             "gender__code": ["exact", "isnull"],
             "marital": ["exact", "isnull"],
+            "insuree_wallet":["exact", "isnull"],
             "validity_from": ["exact", "lt", "lte", "gt", "gte", "isnull"],
             "validity_to": ["exact", "lt", "lte", "gt", "gte", "isnull"],
             **prefix_filterset("photo__", PhotoGQLType._meta.filter_fields),
