@@ -418,6 +418,9 @@ class Insuree(core_models.VersionedModel, core_models.ExtendableModel):
 
     offline = models.BooleanField(db_column="isOffline", blank=True, null=True)
     audit_user_id = models.IntegerField(db_column="AuditUserID")
+    
+    insuree_wallet = models.CharField(db_column= "Insuree_Wallet", max_length=50, blank= True, null= True )
+    
     # row_id = models.BigIntegerField(db_column='RowID', blank=True, null=True)
 
     def is_head_of_family(self):
