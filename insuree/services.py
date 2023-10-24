@@ -1,14 +1,17 @@
 import base64
 import logging
 import pathlib
+import random
 import shutil
 import uuid
 from os import path
 
+import core.datetimes.ad_datetime
 from core.apps import CoreConfig
 from django.db.models import Q
 from django.utils.translation import gettext as _
 
+from core.services.spimm_services import fetch_next_insuree_id
 from core.signals import register_service_signal
 from insuree.apps import InsureeConfig
 from insuree.models import InsureePhoto, PolicyRenewalDetail, Insuree, Family, InsureePolicy
@@ -226,9 +229,9 @@ class InsureeService:
         data['audit_user_id'] = self.user.id_for_audit
         data['validity_from'] = now
         insuree_uuid = data.pop('uuid', None)
-        errors = validate_insuree_number(data["chf_id"], insuree_uuid)
-        if errors:
-            raise Exception("Invalid insuree number")
+        # errors = validate_insuree_number(data["chf_id"], insuree_uuid)
+        # if errors:
+        #     raise Exception("Invalid insuree number")
         if insuree_uuid:
             insuree = Insuree.objects.prefetch_related("photo").get(uuid=insuree_uuid)
             insuree.save_history()
@@ -237,6 +240,18 @@ class InsureeService:
             reset_insuree_before_update(insuree)
             [setattr(insuree, key, data[key]) for key in data]
         else:
+            if not self.user.claim_admin_id:
+                logger.warning("Creating an insuree while not being a claim admin - no SPIMM id generated, random one instead")
+                chf_id = random.randint(100_000_000_000, 999_999_999_999)
+            else:
+                hf = self.user.claim_admin.health_facility
+                seq_number = str(fetch_next_insuree_id(hf.id))
+                number = seq_number.zfill(4)
+                year = core.datetimes.ad_datetime.date.today().year
+                short_form = hf.json_ext["short_form"]
+                chf_id = f"{short_form}{year}{number}"
+
+            data["chf_id"] = chf_id
             insuree = Insuree.objects.create(**data)
         insuree.save()
         photo = handle_insuree_photo(self.user, now, insuree, photo)
