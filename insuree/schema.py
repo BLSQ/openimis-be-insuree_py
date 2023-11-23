@@ -320,16 +320,17 @@ class Query(graphene.ObjectType):
             f = "location__" + f
             filters += [Q(**{f: parent_location})]
 
+        # Commenting out this block for performance (this info should already been included before
         # Limit the list by the logged in user location mapping
-        user_districts = UserDistrict.get_user_districts(info.context.user._u)
-
-        filters += [
-            Q(
-                location__parent__parent__in=Location.objects.filter(
-                    uuid__in=user_districts.values_list("location__uuid", flat=True)
-                )
-            )
-        ]
+        # user_districts = UserDistrict.get_user_districts(info.context.user._u)
+        #
+        # filters += [
+        #     Q(
+        #         location__parent__parent__in=Location.objects.filter(
+        #             uuid__in=user_districts.values_list("location__uuid", flat=True)
+        #         )
+        #     )
+        # ]
 
         # Duplicates cannot be removed with distinct, as TEXT field is not comparable
         ids = Family.objects.filter(*filters).values_list("id")
