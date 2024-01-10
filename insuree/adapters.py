@@ -10,18 +10,23 @@ from insuree.models import Insuree, HeraUtilities
 
 
 class APIAdapter:
-    def get_data(self) -> Any:
+
+    def get_data(self) -> Any: 
         raise NotImplementedError
+
+
 
 
 @dataclass
 class HeraAdapter(APIAdapter):
+    
     operation: str
     nin: str = None
     uin: str = None
     uuid: str = None
     topic: str = None
     lock = threading.Lock()
+
 
     def get_data(self):
         print("OPERATION: ", self.operation)
@@ -41,80 +46,60 @@ class HeraAdapter(APIAdapter):
             "delete_topic": self.__delete_topic,
             "publish_topic": self.__publish_topic,
         }
-
+        
         return methods[self.operation]()
+        
 
     def __utilities(self, name):
         instance, _ = HeraUtilities.objects.get_or_create(name=name)
         return instance
-
+    
     def __access_token(self):
         # make it thread safe
         with self.lock:
             try:
                 NOW = datetime.now()
-                instance = self.__utilities("hera-token")
-                # instance.delete()
-                # instance = self.__utilities("hera-token")
+                instance = self.__utilities('hera-token')
 
                 # check if token is valid
-                if instance.expiry_time and instance.expiry_time > NOW:
+                if (instance.expiry_time and instance.expiry_time > NOW):
                     TOKEN = instance.access_token
                 else:
                     url = settings.HERA_TOKEN_URL
-                    headers = {"Content-Type": "application/x-www-form-urlencoded"}
-                    data = {
-                        "client_id": "hera-m2m",
-                        "client_secret": settings.HERA_CLIENT_SECRET,
-                        "grant_type": "client_credentials",
-                    }
-                    try:
-                        response = requests.post(
-                            url, headers=headers, data=data, timeout=5
-                        )
-                        response.raise_for_status()
-                    except requests.exceptions.ConnectTimeout:
-                        print("Connection timed out.")
-                        raise GraphQLError(f"Error: Connection timed out.")
-                    except requests.exceptions.ConnectionError:
-                        print("A network problem occurred.")
-                        raise GraphQLError(f"Error: A network problem occurred.")
-                    except requests.exceptions.HTTPError as err:
-                        print(f"HTTP error occurred: {err}")
-                        raise GraphQLError(f"Error: HTTP error occurred: {err}")
-                    else:
-                        _JSON = response.json()
-                        TOKEN = _JSON["access_token"]
+                    headers = {'Content-Type': 'application/x-www-form-urlencoded'}
+                    data = {'client_id': 'hera-m2m','client_secret': settings.HERA_CLIENT_SECRET, 'grant_type': 'client_credentials'}
+                    response = requests.post(url, headers=headers, data=data)
+                    if response.status_code != 200:
+                        raise GraphQLError(f"Error: {response.status_code}")
+                    
+                    _JSON = response.json()
+                    TOKEN = _JSON['access_token']
 
-                        instance.access_token = _JSON["access_token"]
-                        instance.expiry_time = NOW + timedelta(
-                            seconds=_JSON["expires_in"] - 60
-                        )  # 60 seconds expiry buffer
-                        instance.save()
-
+                    instance.access_token = _JSON['access_token']
+                    instance.expiry_time = NOW + timedelta(seconds=_JSON['expires_in'] - 60) # 60 seconds expiry buffer
+                    instance.save()
+                    
                 return {"Authorization": f"Bearer {TOKEN}"}
             except Exception as e:
                 import traceback
-
                 traceback.print_exc()
                 raise GraphQLError(e)
 
+
     def __get_one_person(self):
         if headers := self.__access_token():
-            response = requests.get(
-                url=f"{settings.HERA_GENERAL_URL}/persons/{self.nin}",
-                headers=headers,
-                params=settings.HERA_QUERY_STR,
-            )
+            url = f"{settings.HERA_GENERAL_URL}/persons/{self.nin}"
+            response = requests.get(url, headers=headers, params=settings.HERE_QUERY_STR)
+            self.__confirm_subscription()
             return response.json()
         return None
+
+    
 
     def __get_bulk_info(self):
         if headers := self.__access_token():
             url = f"{settings.HERA_GENERAL_URL}/persons/"
-            response = requests.get(
-                url, headers=headers, params=settings.HERA_QUERY_STR
-            )
+            response = requests.get(url, headers=headers, params=settings.HERE_QUERY_STR)
             return response.json()
         return None
 
@@ -125,12 +110,14 @@ class HeraAdapter(APIAdapter):
             return response.json()
         return None
 
+
     def __match(self):
         if headers := self.__access_token():
             url = f"{settings.HERA_GENERAL_URL}/persons/{self.uin}/match"
             response = requests.post(url, headers=headers)
             return response.json()
         return None
+
 
     def __document(self):
         if headers := self.__access_token():
@@ -139,18 +126,20 @@ class HeraAdapter(APIAdapter):
             return response.json()
         return None
 
-    def __subscribe_to_life_event(self):
-        try:
-            if headers := self.__access_token():
-                url = settings.HERA_SUBSCRIBE_URL
-                response = requests.post(url, headers=headers)
-                return response.json()
-            return None
-        except Exception as e:
-            import traceback
 
-            traceback.print_exc()
-            return e
+    def __subscribe_to_life_event(self):
+        subs = self.__get_subscriptions()
+        headers = self.__access_token()
+        if not subs and headers:
+            url = settings.HERA_SUBSCRIBE_URL
+            response = requests.post(url, headers=headers)
+            response = response.json()
+            instance = self.__utilities('LifeEventTopic')
+            instance.subscription_uuid = response['uuid']
+            instance.save()
+            return response
+        return None
+
 
     def __get_subscriptions(self):
         if headers := self.__access_token():
@@ -158,6 +147,7 @@ class HeraAdapter(APIAdapter):
             response = requests.get(url, headers=headers)
             return response.json()
         return None
+    
 
     def __confirm_subscription(self):
         print("confirming subscription")
@@ -168,18 +158,23 @@ class HeraAdapter(APIAdapter):
             return response.json()
         return None
 
+
     def __unsubscribe_from_topic(self):
         print("unsubscribing from topic")
         try:
+            uuid = self.__utilities('LifeEventTopic').subscription_uuid
             if headers := self.__access_token():
-                url = f"{settings.HERA_GENERAL_URL}/subscriptions/{self.uuid}"
-            return requests.delete(url, headers=headers)
+                url = f"{settings.HERA_GENERAL_URL}/subscriptions/{uuid}"
+                response = requests.delete(url, headers=headers)  
+                return response.json()
+            return None
         except Exception as e:
             import traceback
-
             traceback.print_exc()
             print("ERROR:", e)
             return e
+ 
+
 
     def __create_topic(self):
         if headers := self.__access_token():
@@ -187,12 +182,14 @@ class HeraAdapter(APIAdapter):
             response = requests.post(url, headers=headers)
             return response.json()
         return None
+    
 
     def __get_topics(self):
         if headers := self.__access_token():
             url = f"{settings.HERA_GENERAL_URL}/topics"
             return requests.get(url, headers=headers)
         return None
+    
 
     def __delete_topic(self):
         if headers := self.__access_token():
@@ -200,6 +197,7 @@ class HeraAdapter(APIAdapter):
             response = requests.delete(url, headers=headers)
             return response.json()
         return None
+    
 
     def __publish_topic(self):
         if headers := self.__access_token():
@@ -207,6 +205,7 @@ class HeraAdapter(APIAdapter):
             response = requests.post(url, headers=headers)
             return response.json()
         return None
+    
 
 
 class AnotherAdapter(APIAdapter):
@@ -214,95 +213,91 @@ class AnotherAdapter(APIAdapter):
         "Code to get data from Another API"
 
 
+
+
 class WebhookEventManager:
-    def create_or_update_insuree(self, nin=None, **kwargs):
+    
+    def create_or_update_insuree(self, **kwargs):
         from insuree.models import Family, InsureePolicy
         from policy.models import Policy
         from product.models import Product
         from contribution.models import Premium
-
         try:
-            is_local = kwargs.get("is_local", "false")
-            is_local_yes_no = "Yes" if is_local.lower() == "true" else "No"
-            insuree = Insuree.objects.filter(chf_id=nin).first()
+            insuree = Insuree.objects.filter(nin=kwargs['nin']).first()
             if not insuree:
-                insuree = Insuree.objects.create(
+                insuree =  Insuree.objects.create(
+                    nin=kwargs['nin'], 
                     audit_user_id=1,
                     card_issued=False,
-                    gender_id="M",
-                    chf_id=nin,
-                    other_names=kwargs.get("first_name", "None"),
-                    last_name=kwargs.get("last_name", "None"),
-                    place_of_birth=kwargs.get("place_of_birth", None),
-                    certificate_number=kwargs.get("certificate_number", None),
-                    height=kwargs.get("height", None),
-                    weight=kwargs.get("weight", None),
-                    residential_alley=kwargs.get("residential_alley", None),
-                    is_local=is_local_yes_no,
-                    occupation=kwargs.get("occupation", None),
-                    father_name=kwargs.get("father_name", None),
-                    mother_name=kwargs.get("mother_name", None),
-                    residential_village=kwargs.get("residential_village", None),
-                    residential_district=kwargs.get("residential_district", None),
-                    residential_province=kwargs.get("residential_province", None),
-                    house_number=kwargs.get("residential_house_number", None),
-                    dob=kwargs.get("dob", None),
+                    gender_id='M',
+                    chf_id=kwargs['nin'],
+                    other_names=kwargs.get(kwargs['first_name'], 'None'),
+                    last_name=kwargs.get(kwargs['last_name'], 'None'),
+                    uin=kwargs.get('uin', None),
+                    place_of_birth=kwargs.get(',place_of_birth', None),
+                    certificate_number=kwargs.get('certificate_number', None),
+                    height=kwargs.get('height', None),
+                    weight=kwargs.get('weight', None),
+                    residential_alley=kwargs.get('residential_alley', None),
+                    is_local=kwargs.get('is_local', None),
+                    occupation=kwargs.get('occupation', None),
+                    father_name=kwargs.get('father_name', None),
+                    mother_name=kwargs.get('mother_name', None),
+                    residential_village=kwargs.get('residential_village', None),
+                    residential_district=kwargs.get('residential_district', None),
+                    residential_province=kwargs.get('residential_province', None),
+                    residential_house_number=kwargs.get('residential_house_number', None),
+                    dob=kwargs.get('dob', None),
                     head=True,
-                    marital=kwargs.get("marital", None),
-                    passport=kwargs.get("passport", None),
-                    phone=kwargs.get("phone", None),
-                    email=kwargs.get("email", None),
-                    current_address=kwargs.get("current_address", None),
-                    geolocation=kwargs.get("geolocation", None),
-                    current_village=kwargs.get("current_village", None),
+                    marital=kwargs.get('marital', None),
+                    passport=kwargs.get('passport', None),
+                    phone=kwargs.get('phone', None),
+                    email=kwargs.get('email', None),
+                    current_address=kwargs.get('current_address', None),
+                    geolocation=kwargs.get('geolocation', None),
+                    current_village=kwargs.get('current_village', None),
                 )
                 family = Family.objects.create(head_insuree=insuree, audit_user_id=1)
                 now = datetime.now()
                 policy = Policy.objects.create(
-                    family=family,
+                    family=family, 
                     audit_user_id=1,
                     enroll_date=now,
                     start_date=now,
-                    product=Product.objects.all().first(),
+                    product=Product.objects.all().first()
                 )
                 InsureePolicy.objects.create(
-                    insuree=insuree,
+                    insuree=insuree, 
                     audit_user_id=1,
                     policy=policy,
                 )
                 prem = Premium.objects.create(
                     policy=policy,
                     audit_user_id=1,
-                    receipt="Receipt",
+                    receipt='Receipt',
                     amount=0,
                     pay_date=now,
-                    pay_type="C",
+                    pay_type='C',
                     # created_date=now,
                 )
-                insuree.family_id = family.id
-                insuree.save()
             else:
                 fields = [field.name for field in Insuree._meta.get_fields()]
-                cannot_be_none = [
-                    "last_name",
-                    "first_name",
-                ]
-                for key, value in list(kwargs.items()):
+                cannot_be_none = ['last_name', 'first_name',]
+                for key, value in kwargs.items():
                     if key in cannot_be_none and value is None:
-                        kwargs[key] = "None"
+                        value = 'None'
                     if key in fields:
-                        setattr(insuree, key, kwargs[key])
-                        setattr(insuree, "other_names", "first_name")
+                        setattr(insuree, key, value)
                 insuree.save()
             return insuree
         except Exception as e:
             import traceback
-
             traceback.print_exc()
             return e
 
     def delete_insuree(self, nin):
         return Insuree.objects.filter(nin=nin).delete()
+
 
     def get_insuree(self, nin):
         return Insuree.objects.get(nin=nin)

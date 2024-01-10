@@ -36,11 +36,7 @@ class InsureeBase:
     chf_id = graphene.String(max_length=12, required=False)
     last_name = graphene.String(max_length=100, required=True)
     other_names = graphene.String(max_length=100, required=True)
-    gender_id = graphene.String(
-        max_length=1,
-        required=True,
-        description="Was mandatory in Legacy but not in modular",
-    )
+    gender_id = graphene.String(max_length=1, required=True, description="Was mandatory in Legacy but not in modular")
     dob = graphene.Date(required=True)
     head = graphene.Boolean(required=False)
     marital = graphene.String(max_length=1, required=False)
@@ -63,23 +59,14 @@ class InsureeBase:
     offline = graphene.Boolean(required=False)
     insuree_wallet = graphene.String (required = False)
     json_ext = graphene.types.json.JSONString(required=False)
-
+    
     # additional fields for ECRVS
+    birth_registration_number = graphene.String(required=False)
     place_of_birth = graphene.String(required=False)
-    registration_date = graphene.String(required=False)
+    uin = graphene.String(required=False)
+    nin = graphene.String(required=False)
     certificate_number = graphene.String(required=False)
-    height = graphene.String(required=False)
-    weight = graphene.String(required=False)
-    residential_alley = graphene.String(required=False)
-    is_local = graphene.String(required=False)
-    usual_residence = graphene.String(required=False)
-    occupation = graphene.String(required=False)
-    father_name = graphene.String(required=False)
-    mother_name = graphene.String(required=False)
-    residential_village = graphene.String(required=False)
-    residential_district = graphene.String(required=False)
-    residential_province = graphene.String(required=False)
-    house_number = graphene.String(required=False)
+
 
 
 class CreateInsureeInputType(InsureeBase, OpenIMISMutation.Input):
@@ -127,30 +114,30 @@ class UpdateFamilyInputType(FamilyInputType):
 def create_file(date, insuree_id, photo_bin):
     date_iso = date.isoformat()
     root = InsureeConfig.insuree_photos_root_path
-    file_dir = "%s/%s/%s/%s" % (
+    file_dir = '%s/%s/%s/%s' % (
         date_iso[0:4],
         date_iso[5:7],
         date_iso[8:10],
-        insuree_id,
+        insuree_id
     )
     file_name = uuid.uuid4()
-    file_path = "%s/%s" % (file_dir, file_name)
-    pathlib.Path("%s/%s" % (root, file_dir)).mkdir(parents=True, exist_ok=True)
-    f = open("%s/%s" % (root, file_path), "xb")
+    file_path = '%s/%s' % (file_dir, file_name)
+    pathlib.Path('%s/%s' % (root, file_dir)).mkdir(parents=True, exist_ok=True)
+    f = open('%s/%s' % (root, file_path), "xb")
     f.write(base64.b64decode(photo_bin))
     f.close()
     return file_dir, file_name
 
 
 def update_or_create_insuree(data, user):
-    data.pop("client_mutation_id", None)
-    data.pop("client_mutation_label", None)
+    data.pop('client_mutation_id', None)
+    data.pop('client_mutation_label', None)
     return InsureeService(user).create_or_update(data)
 
 
 def update_or_create_family(data, user):
-    data.pop("client_mutation_id", None)
-    data.pop("client_mutation_label", None)
+    data.pop('client_mutation_id', None)
+    data.pop('client_mutation_label', None)
     return FamilyService(user).create_or_update(data)
 
 
@@ -158,7 +145,6 @@ class CreateFamilyMutation(OpenIMISMutation):
     """
     Create a new family, with its head insuree
     """
-
     _mutation_module = "insuree"
     _mutation_class = "CreateFamilyMutation"
 
@@ -169,26 +155,22 @@ class CreateFamilyMutation(OpenIMISMutation):
     def async_mutate(cls, user, **data):
         try:
             if type(user) is AnonymousUser or not user.id:
-                raise ValidationError(_("mutation.authentication_required"))
+                raise ValidationError(
+                    _("mutation.authentication_required"))
             if not user.has_perms(InsureeConfig.gql_mutation_create_families_perms):
                 raise PermissionDenied(_("unauthorized"))
-            data["audit_user_id"] = user.id_for_audit
+            data['audit_user_id'] = user.id_for_audit
             from core.utils import TimeUtils
-
-            data["validity_from"] = TimeUtils.now()
+            data['validity_from'] = TimeUtils.now()
             client_mutation_id = data.get("client_mutation_id")
             family = update_or_create_family(data, user)
-            FamilyMutation.object_mutated(
-                user, client_mutation_id=client_mutation_id, family=family
-            )
+            FamilyMutation.object_mutated(user, client_mutation_id=client_mutation_id, family=family)
             return None
         except Exception as exc:
             logger.exception("insuree.mutation.failed_to_create_family")
-            return [
-                {
-                    "message": _("insuree.mutation.failed_to_create_family"),
-                    "detail": str(exc),
-                }
+            return [{
+                'message': _("insuree.mutation.failed_to_create_family"),
+                'detail': str(exc)}
             ]
 
 
@@ -196,7 +178,6 @@ class UpdateFamilyMutation(OpenIMISMutation):
     """
     Update an existing family, with its head insuree
     """
-
     _mutation_module = "insuree"
     _mutation_class = "UpdateFamilyMutation"
 
@@ -207,23 +188,20 @@ class UpdateFamilyMutation(OpenIMISMutation):
     def async_mutate(cls, user, **data):
         try:
             if type(user) is AnonymousUser or not user.id:
-                raise ValidationError(_("mutation.authentication_required"))
+                raise ValidationError(
+                    _("mutation.authentication_required"))
             if not user.has_perms(InsureeConfig.gql_mutation_update_families_perms):
                 raise PermissionDenied(_("unauthorized"))
-            data["audit_user_id"] = user.id_for_audit
+            data['audit_user_id'] = user.id_for_audit
             client_mutation_id = data.get("client_mutation_id")
             family = update_or_create_family(data, user)
-            FamilyMutation.object_mutated(
-                user, client_mutation_id=client_mutation_id, family=family
-            )
+            FamilyMutation.object_mutated(user, client_mutation_id=client_mutation_id, family=family)
             return None
         except Exception as exc:
             logger.exception("insuree.mutation.failed_to_update_family")
-            return [
-                {
-                    "message": _("insuree.mutation.failed_to_update_family"),
-                    "detail": str(exc),
-                }
+            return [{
+                'message': _("insuree.mutation.failed_to_update_family"),
+                'detail': str(exc)}
             ]
 
 
@@ -231,7 +209,6 @@ class DeleteFamiliesMutation(OpenIMISMutation):
     """
     Delete one or several families (and all its insurees).
     """
-
     _mutation_module = "insuree"
     _mutation_class = "DeleteFamiliesMutation"
 
@@ -245,27 +222,19 @@ class DeleteFamiliesMutation(OpenIMISMutation):
             raise PermissionDenied(_("unauthorized"))
         errors = []
         for family_uuid in data["uuids"]:
-            family = (
-                Family.objects.prefetch_related("members")
-                .filter(uuid=family_uuid)
+            family = Family.objects \
+                .prefetch_related('members') \
+                .filter(uuid=family_uuid) \
                 .first()
-            )
             if family is None:
-                errors.append(
-                    {
-                        "title": family_uuid,
-                        "list": [
-                            {
-                                "message": _("insuree.mutation.failed_to_delete_family")
-                                % {"uuid": family_uuid}
-                            }
-                        ],
-                    }
-                )
+                errors.append({
+                    'title': family_uuid,
+                    'list': [{'message': _("insuree.mutation.failed_to_delete_family") % {'uuid': family_uuid}}]
+                })
                 continue
             errors += FamilyService(user).set_deleted(family, data["delete_members"])
         if len(errors) == 1:
-            errors = errors[0]["list"]
+            errors = errors[0]['list']
         return errors
 
 
@@ -273,7 +242,6 @@ class CreateInsureeMutation(OpenIMISMutation):
     """
     Create a new insuree
     """
-
     _mutation_module = "insuree"
     _mutation_class = "CreateInsureeMutation"
 
@@ -284,27 +252,23 @@ class CreateInsureeMutation(OpenIMISMutation):
     def async_mutate(cls, user, **data):
         try:
             if type(user) is AnonymousUser or not user.id:
-                raise ValidationError(_("mutation.authentication_required"))
+                raise ValidationError(
+                    _("mutation.authentication_required"))
             if not user.has_perms(InsureeConfig.gql_mutation_create_insurees_perms):
                 raise PermissionDenied(_("unauthorized"))
-            data["audit_user_id"] = user.id_for_audit
+            data['audit_user_id'] = user.id_for_audit
             from core.utils import TimeUtils
-
-            data["validity_from"] = TimeUtils.now()
+            data['validity_from'] = TimeUtils.now()
             client_mutation_id = data.get("client_mutation_id")
             insuree = update_or_create_insuree(data, user)
-            print("insuree created:", insuree)
-            InsureeMutation.object_mutated(
-                user, client_mutation_id=client_mutation_id, insuree=insuree
-            )
+            print('insuree created:', insuree)
+            InsureeMutation.object_mutated(user, client_mutation_id=client_mutation_id, insuree=insuree)
             return None
         except Exception as exc:
             logger.exception("insuree.mutation.failed_to_create_insuree")
-            return [
-                {
-                    "message": _("insuree.mutation.failed_to_create_insuree"),
-                    "detail": str(exc),
-                }
+            return [{
+                'message': _("insuree.mutation.failed_to_create_insuree"),
+                'detail': str(exc)}
             ]
 
 
@@ -312,7 +276,6 @@ class UpdateInsureeMutation(OpenIMISMutation):
     """
     Update an existing insuree
     """
-
     _mutation_module = "insuree"
     _mutation_class = "UpdateInsureeMutation"
 
@@ -321,28 +284,24 @@ class UpdateInsureeMutation(OpenIMISMutation):
 
     @classmethod
     def async_mutate(cls, user, **data):
-        print(data)
         try:
             if type(user) is AnonymousUser or not user.id:
-                raise ValidationError(_("mutation.authentication_required"))
+                raise ValidationError(
+                    _("mutation.authentication_required"))
             if not user.has_perms(InsureeConfig.gql_mutation_create_insurees_perms):
                 raise PermissionDenied(_("unauthorized"))
-            if "uuid" not in data:
+            if 'uuid' not in data:
                 raise ValidationError("There is no uuid in updateMutation input!")
-            data["audit_user_id"] = user.id_for_audit
+            data['audit_user_id'] = user.id_for_audit
             client_mutation_id = data.get("client_mutation_id")
             insuree = update_or_create_insuree(data, user)
-            InsureeMutation.object_mutated(
-                user, client_mutation_id=client_mutation_id, insuree=insuree
-            )
+            InsureeMutation.object_mutated(user, client_mutation_id=client_mutation_id, insuree=insuree)
             return None
         except Exception as exc:
             logger.exception("insuree.mutation.failed_to_update_insuree")
-            return [
-                {
-                    "message": _("insuree.mutation.failed_to_update_insuree"),
-                    "detail": str(exc),
-                }
+            return [{
+                'message': _("insuree.mutation.failed_to_update_insuree"),
+                'detail': str(exc)}
             ]
 
 
@@ -350,14 +309,11 @@ class DeleteInsureesMutation(OpenIMISMutation):
     """
     Delete one or several insurees.
     """
-
     _mutation_module = "insuree"
     _mutation_class = "DeleteInsureesMutation"
 
     class Input(OpenIMISMutation.Input):
-        uuid = graphene.String(
-            required=False
-        )  # family uuid, to 'lock' family while mutation is processed
+        uuid = graphene.String(required=False)  # family uuid, to 'lock' family while mutation is processed
         uuids = graphene.List(graphene.String)
 
     @classmethod
@@ -366,40 +322,27 @@ class DeleteInsureesMutation(OpenIMISMutation):
             raise PermissionDenied(_("unauthorized"))
         errors = []
         for insuree_uuid in data["uuids"]:
-            insuree = (
-                Insuree.objects.prefetch_related("family")
-                .filter(uuid=insuree_uuid)
+            insuree = Insuree.objects \
+                .prefetch_related('family') \
+                .filter(uuid=insuree_uuid) \
                 .first()
-            )
             if insuree is None:
-                errors.append(
-                    {
-                        "title": insuree_uuid,
-                        "list": [
-                            {
-                                "message": _("insuree.validation.id_does_not_exist")
-                                % {"id": insuree_uuid}
-                            }
-                        ],
-                    }
-                )
+                errors.append({
+                    'title': insuree_uuid,
+                    'list': [{'message': _(
+                        "insuree.validation.id_does_not_exist") % {'id': insuree_uuid}}]
+                })
                 continue
             if insuree.family and insuree.family.head_insuree.id == insuree.id:
-                errors.append(
-                    {
-                        "title": insuree_uuid,
-                        "list": [
-                            {
-                                "message": _("insuree.validation.delete_head_insuree")
-                                % {"id": insuree_uuid}
-                            }
-                        ],
-                    }
-                )
+                errors.append({
+                    'title': insuree_uuid,
+                    'list': [{'message': _(
+                        "insuree.validation.delete_head_insuree") % {'id': insuree_uuid}}]
+                })
                 continue
             errors += InsureeService(user).set_deleted(insuree)
         if len(errors) == 1:
-            errors = errors[0]["list"]
+            errors = errors[0]['list']
         return errors
 
 
@@ -407,7 +350,6 @@ class RemoveInsureesMutation(OpenIMISMutation):
     """
     Delete one or several insurees.
     """
-
     _mutation_module = "insuree"
     _mutation_class = "RemoveInsureesMutation"
 
@@ -422,41 +364,30 @@ class RemoveInsureesMutation(OpenIMISMutation):
             raise PermissionDenied(_("unauthorized"))
         errors = []
         for insuree_uuid in data["uuids"]:
-            insuree = (
-                Insuree.objects.prefetch_related("family")
-                .filter(uuid=insuree_uuid)
+            insuree = Insuree.objects \
+                .prefetch_related('family') \
+                .filter(uuid=insuree_uuid) \
                 .first()
-            )
             if insuree is None:
                 errors += {
-                    "title": insuree_uuid,
-                    "list": [
-                        {
-                            "message": _("insuree.validation.id_does_not_exist")
-                            % {"id": insuree_uuid}
-                        }
-                    ],
+                    'title': insuree_uuid,
+                    'list': [{'message': _(
+                        "insuree.validation.id_does_not_exist") % {'id': insuree_uuid}}]
                 }
                 continue
             if insuree.family.head_insuree.id == insuree.id:
-                errors.append(
-                    {
-                        "title": insuree_uuid,
-                        "list": [
-                            {
-                                "message": _("insuree.validation.remove_head_insuree")
-                                % {"id": insuree_uuid}
-                            }
-                        ],
-                    }
-                )
+                errors.append({
+                    'title': insuree_uuid,
+                    'list': [{'message': _(
+                        "insuree.validation.remove_head_insuree") % {'id': insuree_uuid}}]
+                })
                 continue
             insuree_service = InsureeService(user)
-            if data["cancel_policies"]:
+            if data['cancel_policies']:
                 errors += insuree_service.cancel_policies(insuree)
             errors += insuree_service.remove(insuree)
         if len(errors) == 1:
-            errors = errors[0]["list"]
+            errors = errors[0]['list']
         return errors
 
 
@@ -464,7 +395,6 @@ class SetFamilyHeadMutation(OpenIMISMutation):
     """
     Set (change) the family head insuree
     """
-
     _mutation_module = "insuree"
     _mutation_class = "SetFamilyHeadMutation"
 
@@ -477,8 +407,8 @@ class SetFamilyHeadMutation(OpenIMISMutation):
         if not user.has_perms(InsureeConfig.gql_mutation_update_families_perms):
             raise PermissionDenied(_("unauthorized"))
         try:
-            family = Family.objects.get(uuid=data["uuid"])
-            insuree = Insuree.objects.get(uuid=data["insuree_uuid"])
+            family = Family.objects.get(uuid=data['uuid'])
+            insuree = Insuree.objects.get(uuid=data['insuree_uuid'])
             family.save_history()
             prev_head = family.head_insuree
             if prev_head:
@@ -493,11 +423,9 @@ class SetFamilyHeadMutation(OpenIMISMutation):
             return None
         except Exception as exc:
             logger.exception("insuree.mutation.failed_to_set_head_insuree")
-            return [
-                {
-                    "message": _("insuree.mutation.failed_to_set_head_insuree"),
-                    "detail": str(exc),
-                }
+            return [{
+                'message': _("insuree.mutation.failed_to_set_head_insuree"),
+                'detail': str(exc)}
             ]
 
 
@@ -505,7 +433,6 @@ class ChangeInsureeFamilyMutation(OpenIMISMutation):
     """
     Set (change) the family of an insuree
     """
-
     _mutation_module = "insuree"
     _mutation_class = "ChangeInsureeFamilyMutation"
 
@@ -516,26 +443,23 @@ class ChangeInsureeFamilyMutation(OpenIMISMutation):
 
     @classmethod
     def async_mutate(cls, user, **data):
-        if not user.has_perms(
-            InsureeConfig.gql_mutation_update_families_perms
-        ) or not user.has_perms(InsureeConfig.gql_mutation_update_insurees_perms):
+        if not user.has_perms(InsureeConfig.gql_mutation_update_families_perms) or \
+                not user.has_perms(InsureeConfig.gql_mutation_update_insurees_perms):
             raise PermissionDenied(_("unauthorized"))
         try:
-            family = Family.objects.get(uuid=data["family_uuid"])
-            insuree = Insuree.objects.get(uuid=data["insuree_uuid"])
+            family = Family.objects.get(uuid=data['family_uuid'])
+            insuree = Insuree.objects.get(uuid=data['insuree_uuid'])
             insuree.save_history()
             insuree.family = family
             insuree.save()
-            if data["cancel_policies"]:
+            if data['cancel_policies']:
                 return InsureeService(user).cancel_policies(insuree)
             return None
         except Exception as exc:
             logger.exception("insuree.mutation.failed_to_change_insuree_family")
-            return [
-                {
-                    "message": _("insuree.mutation.failed_to_change_insuree_family"),
-                    "detail": str(exc),
-                }
+            return [{
+                'message': _("insuree.mutation.failed_to_change_insuree_family"),
+                'detail': str(exc)}
             ]
 
 
