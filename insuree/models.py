@@ -84,8 +84,6 @@ class ConfirmationType(models.Model):
         managed = True
         db_table = 'tblConfirmationTypes'
 
-def get_default_head_insuree():
-    return Insuree.objects.first().id
 
 class Family(core_models.VersionedModel, core_models.ExtendableModel):
     id = models.AutoField(db_column='FamilyID', primary_key=True)
@@ -93,7 +91,7 @@ class Family(core_models.VersionedModel, core_models.ExtendableModel):
                             max_length=36, default=uuid.uuid4, unique=True)
     head_insuree = models.OneToOneField(
         'Insuree', models.DO_NOTHING, db_column='InsureeID', null=False,
-        related_name='head_of') # ADDED default CHECK IF YOU WANT THE BEHAVIOR
+        related_name='head_of')
     location = models.ForeignKey(
         location_models.Location,
         models.DO_NOTHING, db_column='LocationId', blank=True, null=True)
@@ -198,13 +196,7 @@ class Relation(models.Model):
         managed = True
         db_table = 'tblRelations'
 
-HERE_QUERY_STR = {
-    "attributeNames": [
-        "firstName", "lastName", "dob", "placeOfBirth", "certificateNumber", "height", 
-        "weight", "residentialAlley", "isLocal", "occupation", "residentialHouseNumber", 
-        "fatherName", "residentialVillage", "motherName", "residentialDistrict", "residentialProvince"
-    ]
-}
+
 class Insuree(core_models.VersionedModel, core_models.ExtendableModel):
     id = models.AutoField(db_column='InsureeID', primary_key=True)
     uuid = models.CharField(db_column='InsureeUUID', max_length=36, default=uuid.uuid4, unique=True)
@@ -214,26 +206,6 @@ class Insuree(core_models.VersionedModel, core_models.ExtendableModel):
     chf_id = models.CharField(db_column='CHFID', max_length=12, blank=True, null=True)
     last_name = models.CharField(db_column='LastName', max_length=100)
     other_names = models.CharField(db_column='OtherNames', max_length=100)
-
-    # eCRVS fields
-    place_of_birth = models.CharField(db_column='PlaceOfBirth', max_length=100, blank=True, null=True)
-    registration_date = models.CharField(db_column='RegistrationDate', max_length=100, blank=True, null=True)
-    certificate_number = models.CharField(db_column='CertificateNumber', max_length=100, blank=True, null=True)
-    height = models.CharField(db_column='Height', max_length=100, blank=True, null=True)
-    weight = models.CharField(db_column='Weight', max_length=100, blank=True, null=True)
-    residential_alley = models.CharField(db_column='ResidentialAlley', max_length=100, blank=True, null=True)
-    is_local = models.CharField(db_column='IsLocal', max_length=100, blank=True, null=True)
-    usual_residence = models.CharField(db_column='UsualResidence', max_length=100, blank=True, null=True)
-    # might be the same as profession
-    occupation = models.CharField(db_column='Occupation', max_length=100, blank=True, null=True)
-    father_name = models.CharField(db_column='FatherName', max_length=100, blank=True, null=True)
-    mother_name = models.CharField(db_column='MotherName', max_length=100, blank=True, null=True)
-    residential_village = models.CharField(db_column='ResidentialVillage', max_length=100, blank=True, null=True)
-    residential_district = models.CharField(db_column='ResidentialDistrict', max_length=100, blank=True, null=True)
-    residential_province = models.CharField(db_column='ResidentialProvince', max_length=100, blank=True, null=True)
-    residential_house_number = models.CharField(db_column='ResidentialHouseNumber', max_length=100, blank=True, null=True)
-
-
     gender = models.ForeignKey(Gender, models.DO_NOTHING, db_column='Gender', blank=True, null=True,
                                related_name='insurees')
     dob = core.fields.DateField(db_column='DOB')
@@ -284,7 +256,7 @@ class Insuree(core_models.VersionedModel, core_models.ExtendableModel):
     insuree_wallet = models.CharField(db_column= "Insuree_Wallet", max_length=50, blank= True, null= True )
     offline = models.BooleanField(db_column='isOffline', blank=True, null=True)
     audit_user_id = models.IntegerField(db_column='AuditUserID')
-    # row_id = models.BigIntegerField(db_column='RowID', blank=True, null=True)
+    # row_id = models.BinaryField(db_column='RowID', blank=True, null=True)
 
     def is_head_of_family(self):
         return self.family and self.family.head_insuree == self
@@ -402,11 +374,3 @@ class PolicyRenewalDetail(core_models.VersionedModel):
     class Meta:
         managed = True
         db_table = 'tblPolicyRenewalDetails'
-
-
-class HeraUtilities(models.Model):
-    id = models.AutoField(db_column='HeraUtilitiesID', primary_key=True)
-    name = models.CharField(max_length=255, blank=True, null=True)
-    access_token = models.TextField()
-    expiry_time = models.DateTimeField(blank=True, null=True)
-    subscription_uuid = models.UUIDField(blank=True, null=True)

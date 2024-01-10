@@ -4,7 +4,7 @@ import pathlib
 import base64
 import graphene
 
-from insuree.services import validate_insuree_number, InsureeService, FamilyService
+from insuree.services import InsureeService, FamilyService
 
 from .apps import InsureeConfig
 from core.schema import OpenIMISMutation
@@ -13,9 +13,6 @@ from django.core.exceptions import ValidationError, PermissionDenied
 from django.utils.translation import gettext as _
 from graphene import InputObjectType
 from .models import Family, Insuree, FamilyMutation, InsureeMutation
-from .adapters import HeraAdapter
-from graphene.types.generic import GenericScalar
-from graphql.error import GraphQLError
 
 logger = logging.getLogger(__name__)
 
@@ -59,14 +56,6 @@ class InsureeBase:
     offline = graphene.Boolean(required=False)
     insuree_wallet = graphene.String (required = False)
     json_ext = graphene.types.json.JSONString(required=False)
-    
-    # additional fields for ECRVS
-    birth_registration_number = graphene.String(required=False)
-    place_of_birth = graphene.String(required=False)
-    uin = graphene.String(required=False)
-    nin = graphene.String(required=False)
-    certificate_number = graphene.String(required=False)
-
 
 
 class CreateInsureeInputType(InsureeBase, OpenIMISMutation.Input):
@@ -261,7 +250,6 @@ class CreateInsureeMutation(OpenIMISMutation):
             data['validity_from'] = TimeUtils.now()
             client_mutation_id = data.get("client_mutation_id")
             insuree = update_or_create_insuree(data, user)
-            print('insuree created:', insuree)
             InsureeMutation.object_mutated(user, client_mutation_id=client_mutation_id, insuree=insuree)
             return None
         except Exception as exc:
@@ -443,8 +431,8 @@ class ChangeInsureeFamilyMutation(OpenIMISMutation):
 
     @classmethod
     def async_mutate(cls, user, **data):
-        if not user.has_perms(InsureeConfig.gql_mutation_update_families_perms) or \
-                not user.has_perms(InsureeConfig.gql_mutation_update_insurees_perms):
+        if (not user.has_perms(InsureeConfig.gql_mutation_update_families_perms)
+                or not user.has_perms(InsureeConfig.gql_mutation_update_insurees_perms)):
             raise PermissionDenied(_("unauthorized"))
         try:
             family = Family.objects.get(uuid=data['family_uuid'])
@@ -461,33 +449,3 @@ class ChangeInsureeFamilyMutation(OpenIMISMutation):
                 'message': _("insuree.mutation.failed_to_change_insuree_family"),
                 'detail': str(exc)}
             ]
-
-
-class UpdateHeraSubsMutation(OpenIMISMutation):
-    """
-    Manage Hera subscriptions
-    """
-
-    _mutation_module = "insuree"
-    _mutation_class = "UpdateHeraSubsMutation"
-
-    class Input(OpenIMISMutation.Input):
-        topic = graphene.String(required=True)
-        operation = graphene.String(required=True)
-        uuid = graphene.String(required=False)
-
-    @classmethod
-    def async_mutate(cls, user, **data):
-        print("OPERATION IN MUTATION", data.get("operation"))
-        try:
-            if not user.has_perms(InsureeConfig.gql_mutation_update_insurees_perms):
-                raise PermissionDenied(_("unauthorized"))
-            payload = HeraAdapter(
-                operation=data.get("operation"),
-                topic=data.get("topic"),
-                uuid=data.get("uuid"),
-            ).get_data()
-
-            return
-        except Exception as exc:
-            raise GraphQLError("An error occurred") from exc

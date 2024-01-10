@@ -1,17 +1,11 @@
-import graphene
-
-from claim.apps import ClaimConfig
 from core.schema import signal_mutation_module_validate
 from core.utils import filter_validity
 from django.db.models import Q
-from django.core.exceptions import PermissionDenied
 from django.dispatch import Signal
 from graphene_django.filter import DjangoFilterConnectionField
 import graphene_django_optimizer as gql_optimizer
 from location.models import Location, UserDistrict
 
-from .apps import InsureeConfig
-from .models import FamilyMutation, InsureeMutation
 from django.utils.translation import gettext as _
 from location.apps import LocationConfig
 from core.schema import OrderedDjangoFilterConnectionField, OfficerGQLType
@@ -21,6 +15,7 @@ from policy.models import Policy
 # We do need all queries and mutations in the namespace here.
 from .gql_queries import *  # lgtm [py/polluting-import]
 from .gql_mutations import *  # lgtm [py/polluting-import]
+from .services import validate_insuree_number
 from .signals import (
     signal_before_insuree_policy_query,
     _read_signal_results,
@@ -120,14 +115,6 @@ class Query(graphene.ObjectType):
         insuree_number=graphene.String(required=True),
         description="Checks that the specified insuree number is valid",
     )
-    hera_subscriptions = graphene.List(HeraSubsGQLType)
-    # hera_subscriptions = OrderedDjangoFilterConnectionField(
-    #     HeraSubsGQLType,
-    #     orderBy=graphene.List(of_type=graphene.String),
-    # )
-
-    def resolve_hera_subscriptions(self, info):
-        return resolve_hera_subs(self, info)
 
     def resolve_insuree_number_validity(self, info, **kwargs):
         if not info.context.user.has_perms(InsureeConfig.gql_query_insurees_perms):
@@ -400,7 +387,6 @@ class Mutation(graphene.ObjectType):
     remove_insurees = RemoveInsureesMutation.Field()
     set_family_head = SetFamilyHeadMutation.Field()
     change_insuree_family = ChangeInsureeFamilyMutation.Field()
-    update_hera_subs = UpdateHeraSubsMutation.Field()
 
 
 def on_family_mutation(kwargs, k="uuid"):

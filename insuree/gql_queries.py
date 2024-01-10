@@ -16,17 +16,15 @@ from .models import (
     InsureePolicy,
     FamilyMutation,
     InsureeMutation,
-    HeraUtilities,
 )
 from location.schema import LocationGQLType
 from policy.gql_queries import PolicyGQLType
-from core import prefix_filterset, filter_validity, ExtendedConnection
+from core import prefix_filterset, ExtendedConnection
 from django.utils.translation import gettext as _
 from django.core.exceptions import PermissionDenied
 
 from .services import load_photo_file
 
-from graphene.types.generic import GenericScalar
 from graphql import GraphQLError
 
 

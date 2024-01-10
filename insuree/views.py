@@ -1,9 +1,1 @@
-
-import json
-from django.http import HttpResponse
-from .tasks import hera_life_event_handler
-
-def ecrvs_webhook(request):
-    data = json.loads(request.body.decode('utf-8'))
-    hera_life_event_handler(data['nin'], data['context'])
-    return HttpResponse('OK')
+# Create your views here.
