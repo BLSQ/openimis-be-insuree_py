@@ -250,38 +250,3 @@ class FamilyMutationGQLType(DjangoObjectType):
 class InsureeMutationGQLType(DjangoObjectType):
     class Meta:
         model = InsureeMutation
-
-
-class HeraSubsGQLType(graphene.ObjectType):
-    topic = graphene.String()
-    uuid = graphene.String()
-    active = graphene.Boolean()
-    address = graphene.String()
-    policy = graphene.String()
-
-    class Meta:
-        interfaces = (graphene.relay.Node,)
-
-
-def resolve_hera_subs(parent, info):
-    try:
-        if not info.context.user.has_perms(InsureeConfig.gql_query_insuree_perms):
-            raise PermissionDenied(_("unauthorized"))
-
-        from .adapters import HeraAdapter
-
-        data = HeraAdapter(operation="get_subscriptions").get_data()
-        hera_subs_list = []
-        for item in data:
-            hera_subs = HeraSubsGQLType(
-                topic=item["topic"],
-                uuid=item["uuid"],
-                active=item["active"],
-                address=item["address"],
-                policy=item["policy"],
-            )
-            hera_subs_list.append(hera_subs)
-
-        return hera_subs_list
-    except Exception as e:
-        raise GraphQLError(e)
