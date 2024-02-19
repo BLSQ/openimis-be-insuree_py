@@ -124,6 +124,7 @@ def reset_insuree_before_update(insuree):
     insuree.type_of_id = None
     insuree.health_facility = None
     insuree.offline = None
+    insuree.is_pregnant = None
     # insuree.json_ext = None
 
 
