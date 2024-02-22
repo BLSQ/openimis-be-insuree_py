@@ -258,6 +258,7 @@ class Insuree(core_models.VersionedModel, core_models.ExtendableModel):
     audit_user_id = models.IntegerField(db_column='AuditUserID')
     # row_id = models.BinaryField(db_column='RowID', blank=True, null=True)
     is_pregnant = models.BooleanField(db_column='IsPregnant', blank=True, null=True)
+    is_formal_sector = models.BooleanField(db_column='IsFormalSector', blank=True, null=True)
 
     def is_head_of_family(self):
         return self.family and self.family.head_insuree == self

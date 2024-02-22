@@ -159,6 +159,7 @@ class InsureeGQLType(DjangoObjectType):
             "photo": ["isnull"],
             **prefix_filterset("gender__", GenderGQLType._meta.filter_fields),
             "is_pregnant": ["exact", "isnull"],
+            "is_formal_sector": ["exact", "isnull"],
         }
         interfaces = (graphene.relay.Node,)
         connection_class = ExtendedConnection
