@@ -1,3 +1,4 @@
+from core.utils import get_nhia_logo
 from report.services import run_stored_proc_report
 
 # If manually pasting from reportbro and you have test data, search and replace \" with \\"
@@ -13,6 +14,9 @@ template = """
       "width": 575,
       "height": 40,
       "content": "Enrollment Report",
+      "richText": false,
+      "richTextContent": null,
+      "richTextHtml": "",
       "eval": false,
       "styleId": "",
       "bold": true,
@@ -69,6 +73,28 @@ template = """
       "spreadsheet_hide": false,
       "spreadsheet_column": "",
       "spreadsheet_colspan": "",
+      "spreadsheet_addEmptyRow": false,
+      "spreadsheet_textWrap": false
+    },
+    {
+      "elementType": "image",
+      "id": 270,
+      "containerId": "0_header",
+      "x": 10,
+      "y": 0,
+      "width": 80,
+      "height": 80,
+      "source": "${nhia_logo}",
+      "image": "",
+      "imageFilename": "",
+      "horizontalAlignment": "left",
+      "verticalAlignment": "top",
+      "backgroundColor": "",
+      "printIf": "",
+      "removeEmptyElement": false,
+      "link": "",
+      "spreadsheet_hide": false,
+      "spreadsheet_column": "",
       "spreadsheet_addEmptyRow": false
     },
     {
@@ -91,6 +117,9 @@ template = """
       "width": 575,
       "height": 20,
       "content": "List of families and insurees",
+      "richText": false,
+      "richTextContent": null,
+      "richTextHtml": "",
       "eval": false,
       "styleId": "",
       "bold": true,
@@ -147,7 +176,8 @@ template = """
       "spreadsheet_hide": false,
       "spreadsheet_column": "",
       "spreadsheet_colspan": "",
-      "spreadsheet_addEmptyRow": false
+      "spreadsheet_addEmptyRow": false,
+      "spreadsheet_textWrap": false
     },
     {
       "elementType": "table",
@@ -218,7 +248,9 @@ template = """
             "cs_paddingTop": 2,
             "cs_paddingRight": 2,
             "cs_paddingBottom": 2,
+            "spreadsheet_textWrap": false,
             "printIf": "",
+            "growWeight": 0,
             "borderWidth": 1
           },
           {
@@ -263,7 +295,9 @@ template = """
             "cs_paddingTop": 2,
             "cs_paddingRight": 2,
             "cs_paddingBottom": 2,
+            "spreadsheet_textWrap": false,
             "printIf": "",
+            "growWeight": 0,
             "borderWidth": 1
           },
           {
@@ -308,7 +342,9 @@ template = """
             "cs_paddingTop": 2,
             "cs_paddingRight": 2,
             "cs_paddingBottom": 2,
+            "spreadsheet_textWrap": false,
             "printIf": "",
+            "growWeight": 0,
             "borderWidth": 1
           },
           {
@@ -353,7 +389,9 @@ template = """
             "cs_paddingTop": 2,
             "cs_paddingRight": 2,
             "cs_paddingBottom": 2,
+            "spreadsheet_textWrap": false,
             "printIf": "",
+            "growWeight": 0,
             "borderWidth": 1
           }
         ]
@@ -368,6 +406,8 @@ template = """
           "groupExpression": "${district}",
           "printIf": "",
           "alwaysPrintOnSamePage": true,
+          "pageBreak": false,
+          "repeatGroupHeader": false,
           "columnData": [
             {
               "elementType": "table_text",
@@ -411,7 +451,9 @@ template = """
               "cs_paddingTop": 2,
               "cs_paddingRight": 2,
               "cs_paddingBottom": 2,
-              "borderWidth": 1
+              "spreadsheet_textWrap": false,
+              "borderWidth": 1,
+              "growWeight": 0
             },
             {
               "elementType": "table_text",
@@ -455,7 +497,9 @@ template = """
               "cs_paddingTop": 2,
               "cs_paddingRight": 2,
               "cs_paddingBottom": 2,
-              "borderWidth": 1
+              "spreadsheet_textWrap": false,
+              "borderWidth": 1,
+              "growWeight": 0
             },
             {
               "elementType": "table_text",
@@ -499,7 +543,9 @@ template = """
               "cs_paddingTop": 2,
               "cs_paddingRight": 2,
               "cs_paddingBottom": 2,
-              "borderWidth": 1
+              "spreadsheet_textWrap": false,
+              "borderWidth": 1,
+              "growWeight": 0
             },
             {
               "elementType": "table_text",
@@ -543,7 +589,9 @@ template = """
               "cs_paddingTop": 2,
               "cs_paddingRight": 2,
               "cs_paddingBottom": 2,
-              "borderWidth": 1
+              "spreadsheet_textWrap": false,
+              "borderWidth": 1,
+              "growWeight": 0
             }
           ]
         },
@@ -556,6 +604,8 @@ template = """
           "groupExpression": "${ward}",
           "printIf": "",
           "alwaysPrintOnSamePage": true,
+          "pageBreak": false,
+          "repeatGroupHeader": false,
           "columnData": [
             {
               "elementType": "table_text",
@@ -599,7 +649,9 @@ template = """
               "cs_paddingTop": 2,
               "cs_paddingRight": 2,
               "cs_paddingBottom": 2,
-              "borderWidth": 1
+              "spreadsheet_textWrap": false,
+              "borderWidth": 1,
+              "growWeight": 0
             },
             {
               "elementType": "table_text",
@@ -643,7 +695,9 @@ template = """
               "cs_paddingTop": 2,
               "cs_paddingRight": 2,
               "cs_paddingBottom": 2,
-              "borderWidth": 1
+              "spreadsheet_textWrap": false,
+              "borderWidth": 1,
+              "growWeight": 0
             },
             {
               "elementType": "table_text",
@@ -687,7 +741,9 @@ template = """
               "cs_paddingTop": 2,
               "cs_paddingRight": 2,
               "cs_paddingBottom": 2,
-              "borderWidth": 1
+              "spreadsheet_textWrap": false,
+              "borderWidth": 1,
+              "growWeight": 0
             },
             {
               "elementType": "table_text",
@@ -731,7 +787,9 @@ template = """
               "cs_paddingTop": 2,
               "cs_paddingRight": 2,
               "cs_paddingBottom": 2,
-              "borderWidth": 1
+              "spreadsheet_textWrap": false,
+              "borderWidth": 1,
+              "growWeight": 0
             }
           ]
         },
@@ -744,6 +802,8 @@ template = """
           "groupExpression": "${village}",
           "printIf": "",
           "alwaysPrintOnSamePage": true,
+          "pageBreak": false,
+          "repeatGroupHeader": false,
           "columnData": [
             {
               "elementType": "table_text",
@@ -787,7 +847,9 @@ template = """
               "cs_paddingTop": 2,
               "cs_paddingRight": 2,
               "cs_paddingBottom": 2,
-              "borderWidth": 1
+              "spreadsheet_textWrap": false,
+              "borderWidth": 1,
+              "growWeight": 0
             },
             {
               "elementType": "table_text",
@@ -831,7 +893,9 @@ template = """
               "cs_paddingTop": 2,
               "cs_paddingRight": 2,
               "cs_paddingBottom": 2,
-              "borderWidth": 1
+              "spreadsheet_textWrap": false,
+              "borderWidth": 1,
+              "growWeight": 0
             },
             {
               "elementType": "table_text",
@@ -875,7 +939,9 @@ template = """
               "cs_paddingTop": 2,
               "cs_paddingRight": 2,
               "cs_paddingBottom": 2,
-              "borderWidth": 1
+              "spreadsheet_textWrap": false,
+              "borderWidth": 1,
+              "growWeight": 0
             },
             {
               "elementType": "table_text",
@@ -919,7 +985,9 @@ template = """
               "cs_paddingTop": 2,
               "cs_paddingRight": 2,
               "cs_paddingBottom": 2,
-              "borderWidth": 1
+              "spreadsheet_textWrap": false,
+              "borderWidth": 1,
+              "growWeight": 0
             }
           ]
         },
@@ -932,6 +1000,8 @@ template = """
           "groupExpression": "",
           "printIf": "",
           "alwaysPrintOnSamePage": false,
+          "pageBreak": false,
+          "repeatGroupHeader": false,
           "columnData": [
             {
               "elementType": "table_text",
@@ -975,7 +1045,9 @@ template = """
               "cs_paddingTop": 2,
               "cs_paddingRight": 2,
               "cs_paddingBottom": 2,
-              "borderWidth": 1
+              "spreadsheet_textWrap": false,
+              "borderWidth": 1,
+              "growWeight": 0
             },
             {
               "elementType": "table_text",
@@ -1019,7 +1091,9 @@ template = """
               "cs_paddingTop": 2,
               "cs_paddingRight": 2,
               "cs_paddingBottom": 2,
-              "borderWidth": 1
+              "spreadsheet_textWrap": false,
+              "borderWidth": 1,
+              "growWeight": 0
             },
             {
               "elementType": "table_text",
@@ -1063,7 +1137,9 @@ template = """
               "cs_paddingTop": 2,
               "cs_paddingRight": 2,
               "cs_paddingBottom": 2,
-              "borderWidth": 1
+              "spreadsheet_textWrap": false,
+              "borderWidth": 1,
+              "growWeight": 0
             },
             {
               "elementType": "table_text",
@@ -1107,7 +1183,9 @@ template = """
               "cs_paddingTop": 2,
               "cs_paddingRight": 2,
               "cs_paddingBottom": 2,
-              "borderWidth": 1
+              "spreadsheet_textWrap": false,
+              "borderWidth": 1,
+              "growWeight": 0
             }
           ]
         }
@@ -1160,7 +1238,9 @@ template = """
             "cs_paddingTop": 2,
             "cs_paddingRight": 2,
             "cs_paddingBottom": 2,
-            "borderWidth": 1
+            "spreadsheet_textWrap": false,
+            "borderWidth": 1,
+            "growWeight": 0
           },
           {
             "elementType": "table_text",
@@ -1204,7 +1284,9 @@ template = """
             "cs_paddingTop": 2,
             "cs_paddingRight": 2,
             "cs_paddingBottom": 2,
-            "borderWidth": 1
+            "spreadsheet_textWrap": false,
+            "borderWidth": 1,
+            "growWeight": 0
           },
           {
             "elementType": "table_text",
@@ -1248,7 +1330,9 @@ template = """
             "cs_paddingTop": 2,
             "cs_paddingRight": 2,
             "cs_paddingBottom": 2,
-            "borderWidth": 1
+            "spreadsheet_textWrap": false,
+            "borderWidth": 1,
+            "growWeight": 0
           },
           {
             "elementType": "table_text",
@@ -1292,7 +1376,9 @@ template = """
             "cs_paddingTop": 2,
             "cs_paddingRight": 2,
             "cs_paddingBottom": 2,
-            "borderWidth": 1
+            "spreadsheet_textWrap": false,
+            "borderWidth": 1,
+            "growWeight": 0
           }
         ]
       }
@@ -1306,6 +1392,9 @@ template = """
       "width": 255,
       "height": 30,
       "content": "Page ${page_number} / ${page_count}",
+      "richText": false,
+      "richTextContent": null,
+      "richTextHtml": "",
       "eval": false,
       "styleId": "",
       "bold": false,
@@ -1362,7 +1451,8 @@ template = """
       "spreadsheet_hide": false,
       "spreadsheet_column": "",
       "spreadsheet_colspan": "",
-      "spreadsheet_addEmptyRow": false
+      "spreadsheet_addEmptyRow": false,
+      "spreadsheet_textWrap": false
     },
     {
       "elementType": "text",
@@ -1370,9 +1460,12 @@ template = """
       "containerId": "0_footer",
       "x": 0,
       "y": 0,
-      "width": 290,
+      "width": 390,
       "height": 30,
-      "content": "Created on ${current_date}",
+      "content": "Created on ${current_date} by ${requested_by}",
+      "richText": false,
+      "richTextContent": null,
+      "richTextHtml": "",
       "eval": false,
       "styleId": "",
       "bold": false,
@@ -1429,7 +1522,8 @@ template = """
       "spreadsheet_hide": false,
       "spreadsheet_column": "",
       "spreadsheet_colspan": "",
-      "spreadsheet_addEmptyRow": false
+      "spreadsheet_addEmptyRow": false,
+      "spreadsheet_textWrap": false
     }
   ],
   "parameters": [
@@ -1650,6 +1744,30 @@ template = """
           "testData": ""
         }
       ]
+    },
+    {
+      "id": 268,
+      "name": "nhia_logo",
+      "type": "image",
+      "arrayItemType": "string",
+      "eval": false,
+      "nullable": false,
+      "pattern": "",
+      "expression": "",
+      "showOnlyNameType": false,
+      "testData": ""
+    },
+    {
+      "id": 269,
+      "name": "requested_by",
+      "type": "string",
+      "arrayItemType": "string",
+      "eval": false,
+      "nullable": false,
+      "pattern": "",
+      "expression": "",
+      "showOnlyNameType": false,
+      "testData": ""
     }
   ],
   "styles": [
@@ -1754,7 +1872,6 @@ template = """
     "patternCurrencySymbol": "$"
   }
 }
-
 """
 
 
@@ -1766,5 +1883,7 @@ def enrolled_families_query(user, date_from=None, date_to=None, location_id=None
         EndDate=date_to,
     )
     return {
-        "data": data
+        "data": data,
+        "nhia_logo": get_nhia_logo(),
+        "requested_by": f"{user.username} - {user.other_names} {user.last_name}",
     }

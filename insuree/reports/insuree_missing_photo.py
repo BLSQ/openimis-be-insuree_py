@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.db import connection
 
+from core.utils import get_nhia_logo
 from tools.utils import dictfetchall
 import logging
 logger = logging.getLogger(__name__)
@@ -79,6 +80,27 @@ template = """
       "spreadsheet_colspan": "",
       "spreadsheet_addEmptyRow": false,
       "spreadsheet_textWrap": false
+    },
+    {
+      "elementType": "image",
+      "id": 273,
+      "containerId": "0_header",
+      "x": 10,
+      "y": 0,
+      "width": 80,
+      "height": 80,
+      "source": "${nhia_logo}",
+      "image": "",
+      "imageFilename": "",
+      "horizontalAlignment": "left",
+      "verticalAlignment": "top",
+      "backgroundColor": "",
+      "printIf": "",
+      "removeEmptyElement": false,
+      "link": "",
+      "spreadsheet_hide": false,
+      "spreadsheet_column": "",
+      "spreadsheet_addEmptyRow": false
     },
     {
       "elementType": "line",
@@ -1641,9 +1663,9 @@ template = """
       "containerId": "0_footer",
       "x": 0,
       "y": 0,
-      "width": 290,
+      "width": 400,
       "height": 30,
-      "content": "Created on ${current_date}",
+      "content": "Created on ${current_date} by ${requested_by}",
       "richText": false,
       "richTextContent": null,
       "richTextHtml": "",
@@ -1901,6 +1923,30 @@ template = """
           "testData": ""
         }
       ]
+    },
+    {
+      "id": 271,
+      "name": "nhia_logo",
+      "type": "image",
+      "arrayItemType": "string",
+      "eval": false,
+      "nullable": false,
+      "pattern": "",
+      "expression": "",
+      "showOnlyNameType": false,
+      "testData": ""
+    },
+    {
+      "id": 272,
+      "name": "requested_by",
+      "type": "string",
+      "arrayItemType": "string",
+      "eval": false,
+      "nullable": false,
+      "pattern": "",
+      "expression": "",
+      "showOnlyNameType": false,
+      "testData": ""
     }
   ],
   "styles": [
@@ -2060,7 +2106,11 @@ def insuree_missing_photo_query(user, officerId=0, locationId=0, **kwargs):
                     "location_id": locationId,
                 },
             )
-            return {"data": dictfetchall(cur)}
+            return {
+                "data": dictfetchall(cur),
+                "nhia_logo": get_nhia_logo(),
+                "requested_by": f"{user.username} - {user.other_names} {user.last_name}",
+            }
         except Exception as e:
             logger.exception("Error fetching missing photo query")
             raise e

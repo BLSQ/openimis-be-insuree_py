@@ -30,7 +30,7 @@ report_definitions = [
         "name": "insuree_family_overview",
         "engine": 0,
         "default_report": insuree_family_overview.template,
-        "description": "Simple claim report",
+        "description": "Family overview",
         "module": "insuree",
         "python_query": insuree_family_overview_query,
         "permission": ["131215"],
