@@ -1319,9 +1319,9 @@ WITH PendingInsurees AS
           WHERE I."ValidityTo" Is NULL
             AND I."InsureeID" IS NULL  -- Insuree not enrolled
             AND O."ValidityTo" IS NULL
-            AND (L."Region" = %(LocationId)s OR L."DistrictId" = %(LocationId)s OR %(LocationId)s = 0)
-            AND (O."OfficerID" = %(OfficerId)s OR %(OfficerId)s = 0)
-            AND P."PhotoDate" BETWEEN %(StartDate)s AND %(EndDate)s
+            AND (L."Region" = %s OR L."DistrictId" = %s OR %s = 0)
+            AND (O."OfficerID" = %s OR %s = 0)
+            AND P."PhotoDate" BETWEEN %s AND %s
           GROUP BY O."OfficerID", O."Code", O."OtherNames", O."LastName", P."CHFID", O."WorksTo")
 SELECT "OfficerID",
        "Code",
@@ -1336,17 +1336,28 @@ FROM PendingInsurees
 """
 
 
+def _prepare_report_parameters(dict_params: dict):
+    # Prepares a tuple with parameters, in the correct order, since on MSSQL, pyodbc can't handle named parameters
+    params = (
+        dict_params["LocationId"], dict_params["LocationId"], dict_params["LocationId"],
+        dict_params["OfficerId"], dict_params["OfficerId"],
+        dict_params["StartDate"],
+        dict_params["EndDate"],
+    )
+    return params
+
+
 def insurees_pending_enrollment_query(user, officerId=0, locationId=0, dateFrom=None, dateTo=None, **kwargs):
     with connection.cursor() as cur:
         try:
             cur.execute(
                 insurees_pending_enrollment,
-                {
+                _prepare_report_parameters({
                     "OfficerId": officerId,
                     "LocationId": locationId,
                     "StartDate": dateFrom,
                     "EndDate": dateTo,
-                },
+                }),
             )
             return {
                 "StartDate": dateFrom,
