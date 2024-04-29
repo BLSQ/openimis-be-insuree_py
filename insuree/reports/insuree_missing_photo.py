@@ -2059,9 +2059,9 @@ missing_photo_sql = f"""
 WITH {"" if settings.MSSQL else "RECURSIVE"} locations AS (SELECT "LocationId", "ParentLocationId"
                    FROM "tblLocations"
                    WHERE "ValidityTo" IS NULL
-                     AND ("LocationId" = %(location_id)s OR
-                          CASE WHEN %(location_id)s IS NULL THEN coalesce("ParentLocationId", 0) ELSE 0 END =
-                          coalesce(%(location_id)s, 0))
+                     AND ("LocationId" = %s OR
+                          CASE WHEN %s IS NULL THEN coalesce("ParentLocationId", 0) ELSE 0 END =
+                          coalesce(%s, 0))
                    UNION ALL
                    SELECT l."LocationId", l."ParentLocationId"
                    FROM "tblLocations" l
@@ -2089,11 +2089,20 @@ WHERE f."ValidityTo" Is NULL And i."ValidityTo" Is NULL And p."ValidityTo" Is NU
   And d."ValidityTo" Is NULL And w."ValidityTo" Is NULL And v."ValidityTo" Is NULL AND r."ValidityTo" IS NULL
   AND ({"LEN" if settings.MSSQL else "length"}(RTRIM(LTRIM(ph."PhotoFileName"))) = 0
           OR ph."PhotoFileName" IS NULL)
-  AND (p."OfficerID" = %(officer_id)s OR %(officer_id)s = 0)
+  AND (p."OfficerID" = %s OR %s = 0)
 GROUP BY i."CHFID", i."LastName", i."OtherNames", i."Gender", i."IsHead", d."DistrictName", w."WardName",
          v."VillageName", o."Code", o."LastName", o."OtherNames", o."WorksTo"
 ORDER BY d."DistrictName", o."Code", w."WardName", v."VillageName"
 """
+
+
+def _prepare_report_parameters(dict_params: dict):
+    # Prepares a tuple with parameters, in the correct order, since on MSSQL, pyodbc can't handle named parameters
+    params = (
+        dict_params["location_id"], dict_params["location_id"], dict_params["location_id"],
+        dict_params["officer_id"], dict_params["officer_id"],
+    )
+    return params
 
 
 def insuree_missing_photo_query(user, officerId=0, locationId=0, **kwargs):
@@ -2101,10 +2110,10 @@ def insuree_missing_photo_query(user, officerId=0, locationId=0, **kwargs):
         try:
             cur.execute(
                 missing_photo_sql,
-                {
+                _prepare_report_parameters({
                     "officer_id": officerId,
                     "location_id": locationId,
-                },
+                }),
             )
             return {
                 "data": dictfetchall(cur),
